@@ -2,7 +2,10 @@ package backend;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
 public class DatabaseManager {
 
@@ -15,7 +18,6 @@ public class DatabaseManager {
     private Connection connection;
 
     private DatabaseManager() {}
-
 
     public static DatabaseManager getInstance() {
         if (instance == null) {
@@ -33,8 +35,7 @@ public class DatabaseManager {
             System.out.println("Connected to the database.");
         }
         catch (SQLException e) {
-            System.out.println("Error connecting to the database:");
-            e.printStackTrace();
+            System.out.println("Error connecting to the database.");
         }
     }
 
@@ -50,7 +51,112 @@ public class DatabaseManager {
             }
         }
         catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println("Error disconnecting from the database.");
+        }
+    }
+
+    public int insert(String tableName, String[] columns, Object[] values) throws SQLException {
+        if (columns.length != values.length) {
+            throw new IllegalArgumentException("Columns and values arrays must have the same length");
+        }
+
+        StringBuilder sql = new StringBuilder("INSERT INTO " + tableName + " (");
+        StringBuilder placeholders = new StringBuilder(") VALUES (");
+
+        for (int i = 0; i < columns.length; i++) {
+            sql.append(columns[i]);
+            placeholders.append("?");
+
+            if (i < columns.length - 1) {
+                sql.append(", ");
+                placeholders.append(", ");
+            }
+        }
+        placeholders.append(")");
+        sql.append(placeholders);
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+            // Set values for prepared statement
+            for (int i = 0; i < values.length; i++) {
+                pstmt.setObject(i + 1, values[i]);
+            }
+
+            int affectedRows = pstmt.executeUpdate();
+
+            if (affectedRows == 0) {
+                throw new SQLException("Insert failed, no rows affected.");
+            }
+
+            // Get the generated key
+            try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    return generatedKeys.getInt(1);
+                } else {
+                    throw new SQLException("Insert failed, no ID obtained.");
+                }
+            }
+        }
+    }
+
+
+    public int insertPerson(String firstName, String lastName, String dateBorn,
+                            String username, String password, String role) throws SQLException {
+        String[] columns = {"first_name", "last_name", "date_born", "username", "password", "role"};
+        Object[] values = {firstName, lastName, dateBorn, username, password, role};
+        return insert("person", columns, values);
+    }
+
+    public int insertCustomer(int personId) throws SQLException {
+        String[] columns = {"customer_id"};
+        Object[] values = {personId};
+        return insert("customer", columns, values);
+    }
+
+    public int insertAgent(int personId) throws SQLException {
+        String[] columns = {"agent_id"};
+        Object[] values = {personId};
+        return insert("agent", columns, values);
+    }
+
+    public int insertAirline(String airlineName) throws SQLException {
+        String[] columns = {"airline_name"};
+        Object[] values = {airlineName};
+        return insert("airline", columns, values);
+    }
+
+    public int insertAddress(String postalCode, int number, String street,
+                             String city, String state, String country) throws SQLException {
+        String[] columns = {"postal_code", "number", "street", "city", "state", "country"};
+        Object[] values = {postalCode, number, street, city, state, country};
+        return insert("address", columns, values);
+    }
+
+    public int insertFlight(int airplaneId, int routeId, String departureDate,
+                            String arrivalDate, int availableSeats, int flightLength, double price) throws SQLException {
+        String[] columns = {"airplane_id", "route_id", "departure_date", "arrival_date",
+                "available_seats", "flight_length", "price"};
+        Object[] values = {airplaneId, routeId, departureDate, arrivalDate, availableSeats, flightLength, price};
+        return insert("flight", columns, values);
+    }
+
+    public int insertBooking(int customerId, int flightId, int seatNumber) throws SQLException {
+        String[] columns = {"customer_id", "flight_id", "seat_number"};
+        Object[] values = {customerId, flightId, seatNumber};
+        return insert("booking", columns, values);
+    }
+
+    public boolean isConnected() {
+        try {
+            return connection != null && !connection.isClosed();
+        }
+        catch (SQLException e) {
+            return false;
+        }
+    }
+
+    public int executeUpdate(String sql) throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
+            return stmt.executeUpdate(sql);
         }
     }
 }
