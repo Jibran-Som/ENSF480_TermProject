@@ -6,6 +6,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.List;
+import java.util.ArrayList;
 
 public class DatabaseManager {
 
@@ -76,7 +78,6 @@ public class DatabaseManager {
         sql.append(placeholders);
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            // Set values for prepared statement
             for (int i = 0; i < values.length; i++) {
                 pstmt.setObject(i + 1, values[i]);
             }
@@ -97,7 +98,6 @@ public class DatabaseManager {
             }
         }
     }
-
 
     public int insertPerson(String firstName, String lastName, String dateBorn,
                             String username, String password, String role) throws SQLException {
@@ -154,9 +154,64 @@ public class DatabaseManager {
         }
     }
 
-    public int executeUpdate(String sql) throws SQLException {
-        try (Statement stmt = connection.createStatement()) {
-            return stmt.executeUpdate(sql);
+    // Safe update method with parameters
+    public int executeUpdate(String sql, Object... params) throws SQLException {
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            for (int i = 0; i < params.length; i++) {
+                pstmt.setObject(i + 1, params[i]);
+            }
+            return pstmt.executeUpdate();
         }
+    }
+
+    // Safe query method for SELECT statements
+    public ResultSet executeQuery(String sql, Object... params) throws SQLException {
+        PreparedStatement pstmt = connection.prepareStatement(sql);
+        for (int i = 0; i < params.length; i++) {
+            pstmt.setObject(i + 1, params[i]);
+        }
+        return pstmt.executeQuery();
+    }
+
+    // Safe method for specific operations that don't need dynamic SQL
+    public int deleteById(String tableName, String idColumn, int id) throws SQLException {
+        String sql = "DELETE FROM " + tableName + " WHERE " + idColumn + " = ?";
+        return executeUpdate(sql, id);
+    }
+
+    public ResultSet findById(String tableName, String idColumn, int id) throws SQLException {
+        String sql = "SELECT * FROM " + tableName + " WHERE " + idColumn + " = ?";
+        return executeQuery(sql, id);
+    }
+
+
+    public ResultSet findAll(String tableName) throws SQLException {
+        String sql = "SELECT * FROM " + tableName;
+        return executeQuery(sql);
+    }
+
+    public int[] executeBatchUpdate(List<String> sqlStatements) throws SQLException {
+        try (Statement stmt = connection.createStatement()) {
+            for (String sql : sqlStatements) {
+                if (!isSafeForBatch(sql)) {
+                    throw new SQLException("Unsafe SQL statement detected: " + sql);
+                }
+                stmt.addBatch(sql);
+            }
+            return stmt.executeBatch();
+        }
+    }
+
+    // Basic SQL safety check (you can expand this)
+    private boolean isSafeForBatch(String sql) {
+        // Check for potentially dangerous operations
+        String lowerSql = sql.toLowerCase().trim();
+        return !lowerSql.contains("drop ") &&
+                !lowerSql.contains("delete from") &&
+                !lowerSql.contains("truncate") &&
+                !lowerSql.contains("alter ") &&
+                !lowerSql.contains("create ") &&
+                !lowerSql.contains("insert ") &&
+                !lowerSql.contains("update ");
     }
 }
