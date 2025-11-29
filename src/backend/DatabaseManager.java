@@ -162,6 +162,8 @@ public class DatabaseManager {
         return insert("route", columns, values, true);
     }
 
+
+
     // SELECT METHODS
     public ArrayList<Address> getAllAddresses() throws SQLException {
         ArrayList<Address> addresses = new ArrayList<>();
@@ -263,19 +265,23 @@ public class DatabaseManager {
 
     public ArrayList<Flight> getAllFlights() throws SQLException {
         ArrayList<Flight> flights = new ArrayList<>();
-        // This would be a complex join - simplified for example
         String query = "SELECT * FROM flight";
+
+
 
         try (PreparedStatement pstmt = connection.prepareStatement(query);
              ResultSet rs = pstmt.executeQuery()) {
 
+
             while (rs.next()) {
-                // In a real implementation, you'd join with airplane, route, etc.
-                // This is simplified
+                Route route = getRouteById(rs.getInt("route_id"));
+                Airplane airplane = getAirplaneById(rs.getInt("airplane_id"));
+
+
                 Flight flight = new Flight(
                     rs.getInt("flight_id"),
-                    null, // airplane would be fetched separately
-                    null, // route would be fetched separately
+                    airplane, // airplane would be fetched separately
+                    route,
                     CustomDate.StringToDate(rs.getDate("departure_date").toString()),
                     CustomDate.StringToDate(rs.getDate("arrival_date").toString()),
                     rs.getInt("available_seats"),
@@ -287,6 +293,68 @@ public class DatabaseManager {
         }
         return flights;
     }
+
+    public Airplane getAirplaneById(int airplaneId) throws SQLException {
+        String query = "SELECT a.*, al.airline_name FROM airplane a " +
+            "JOIN airline al ON a.airline_name = al.airline_name " +
+            "WHERE a.airplane_id = ?";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setInt(1, airplaneId);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                Airline airline = new Airline(rs.getString("airline_name"));
+                return new Airplane(
+                    rs.getInt("airplane_id"),
+                    airline,
+                    rs.getString("name"),
+                    "Active", // default status
+                    rs.getInt("flight_number"),
+                    new ArrayList<>()
+                );
+            }
+        }
+        return null;
+    }
+
+    public Route getRouteById(int routeId) throws SQLException {
+        String query = "SELECT r.*, o.*, d.* FROM route r " +
+            "JOIN address o ON r.origin_id = o.address_id " +
+            "JOIN address d ON r.destination_id = d.address_id " +
+            "WHERE r.route_id = ?";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setInt(1, routeId);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                Address origin = new Address(
+                    rs.getInt("o.address_id"),
+                    rs.getString("o.postal_code"),
+                    rs.getInt("o.number"),
+                    rs.getString("o.street"),
+                    rs.getString("o.city"),
+                    rs.getString("o.state"),
+                    rs.getString("o.country")
+                );
+
+                Address destination = new Address(
+                    rs.getInt("d.address_id"),
+                    rs.getString("d.postal_code"),
+                    rs.getInt("d.number"),
+                    rs.getString("d.street"),
+                    rs.getString("d.city"),
+                    rs.getString("d.state"),
+                    rs.getString("d.country")
+                );
+
+                return new Route(rs.getInt("route_id"), origin, destination);
+            }
+        }
+        return null;
+    }
+
 
     public ArrayList<Customer> getAllCustomers() throws SQLException {
         ArrayList<Customer> customers = new ArrayList<>();
@@ -314,6 +382,30 @@ public class DatabaseManager {
         return customers;
     }
 
+
+    public ArrayList<Booking> getAllBookings() throws SQLException {
+        ArrayList<Booking> bookings = new ArrayList<>();
+        String query = "SELECT b.* FROM booking b";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(query);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                Customer customer = getCustomerById(rs.getInt("customer_id"));
+                Flight flight = getFlightById(rs.getInt("flight_id"));
+
+                Booking booking = new Booking(
+                    rs.getInt("booking_id"),
+                    customer,
+                    flight,
+                    rs.getInt("seat_number")
+                );
+                bookings.add(booking);
+            }
+        }
+        return bookings;
+    }
+
     public Customer getCustomerById(int customerId) throws SQLException {
         String query = "SELECT p.person_id, p.first_name, p.last_name, p.date_born, c.email " +
             "FROM person p JOIN customer c ON p.person_id = c.customer_id " +
@@ -339,28 +431,6 @@ public class DatabaseManager {
         return null;
     }
 
-    public ArrayList<Booking> getAllBookings() throws SQLException {
-        ArrayList<Booking> bookings = new ArrayList<>();
-        String query = "SELECT b.* FROM booking b";
-
-        try (PreparedStatement pstmt = connection.prepareStatement(query);
-             ResultSet rs = pstmt.executeQuery()) {
-
-            while (rs.next()) {
-                Customer customer = getCustomerById(rs.getInt("customer_id"));
-                Flight flight = getFlightById(rs.getInt("flight_id"));
-
-                Booking booking = new Booking(
-                    rs.getInt("booking_id"),
-                    customer,
-                    flight,
-                    rs.getInt("seat_number")
-                );
-                bookings.add(booking);
-            }
-        }
-        return bookings;
-    }
 
     public Flight getFlightById(int flightId) throws SQLException {
         // Simplified - in real implementation, join with related tables
@@ -580,7 +650,6 @@ public class DatabaseManager {
             }
         }
 
-        // Then delete the airplane
         delete("airplane", "airplane_id = ?", new Object[]{airplaneId});
     }
 
