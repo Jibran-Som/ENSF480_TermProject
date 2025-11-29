@@ -1,13 +1,19 @@
 package model;
 
 
+import backend.DatabaseManager;
+
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class FlightAgent extends Person {
     private ArrayList<Customer> clients;
+    private DatabaseManager db = DatabaseManager.getInstance();
 
-    public FlightAgent(int id, String firstName, String lastName, Date DoB, ArrayList<Customer> clients){
-        super(id, firstName, lastName, DoB);
+
+    public FlightAgent(int id, String firstName, String lastName, Date DoB, ArrayList<Customer> clients) throws SQLException {
+        super(firstName, lastName, DoB);
+        this.setId(db.insertPerson(firstName, lastName, DoB.toSQLDate(), "flight_pass", "FlightAgent"));
         this.clients = clients;
     }
 

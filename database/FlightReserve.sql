@@ -10,7 +10,6 @@ CREATE TABLE person
     first_name           VARCHAR(20) NOT NULL,
     last_name            VARCHAR(20) NOT NULL,
     date_born            DATE,
-    username             VARCHAR(30),
     password             VARCHAR(30),
     role                 CHAR(20) NOT NULL,
     PRIMARY KEY (person_id)
@@ -20,6 +19,7 @@ DROP TABLE IF EXISTS customer;
 
 CREATE TABLE customer (
                           customer_id INT NOT NULL,
+                          email                VARCHAR(30),
                           PRIMARY KEY (customer_id),
                           FOREIGN KEY (customer_id) REFERENCES person (person_id)
 );
