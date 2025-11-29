@@ -7,15 +7,13 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.List;
-import java.util.ArrayList;
 
 
 public class DatabaseManager {
 
     private static DatabaseManager instance; // Singleton instance
 
-    private static final String URL = "jdbc:mysql://localhost:3306/FLIGHTRESERVE";
+    private static final String URL = "jdbc:mysql://localhost:3306/FLIGHTRESERVE?useSSL=false&allowPublicKeyRetrieval=true";
     private String user;
     private String password;
 
@@ -40,6 +38,7 @@ public class DatabaseManager {
         }
         catch (SQLException e) {
             System.out.println("Error connecting to the database.");
+            e.printStackTrace();
         }
     }
 
@@ -58,7 +57,6 @@ public class DatabaseManager {
             System.out.println("Error disconnecting from the database.");
         }
     }
-
 
 
     public boolean isConnected() {
@@ -120,16 +118,16 @@ public class DatabaseManager {
     }
 
     public int insertPerson(String firstName, String lastName, String dateBorn,
-                            String username, String password, String role) throws SQLException {
-        String[] columns = {"first_name", "last_name", "date_born", "username", "password", "role"};
-        Object[] values = {firstName, lastName, dateBorn, username, password, role};
+                            String password, String role) throws SQLException {
+        String[] columns = {"first_name", "last_name", "date_born", "password", "role"};
+        Object[] values = {firstName, lastName, dateBorn, password, role};
         return insert("person", columns, values);
     }
 
-    public int insertCustomer(int personId) throws SQLException {
-        String[] columns = {"customer_id"};
-        Object[] values = {personId};
-        return insert("customer", columns, values);
+    public void insertCustomer(int personId, String email) throws SQLException {
+        String[] columns = {"customer_id", "email"};
+        Object[] values = {personId, email};
+        insert("customer", columns, values);
     }
 
     public int insertAgent(int personId) throws SQLException {
@@ -173,14 +171,15 @@ public class DatabaseManager {
 
     public int updatePerson(Person person) throws SQLException {
         String[] columns = {"first_name", "last_name", "date_born"};
-
-        String sqlDate = person.getDoB().toSQLDate(); // Make sure your Date class has this method
+        String sqlDate = person.getDoB().toSQLDate();
         Object[] values = {person.getFirstName(), person.getLastName(), sqlDate};
-
         String whereClause = "person_id = ?";
         Object[] whereValues = {person.getId()};
         return update("person", columns, values, whereClause, whereValues);
     }
+
+
+
 
     public int update(String tableName, String[] columns, Object[] values, String whereClause, Object[] whereValues) throws SQLException {
         if (columns.length != values.length) {

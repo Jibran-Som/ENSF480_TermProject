@@ -1,13 +1,16 @@
 package model;
 
+import backend.DatabaseManager;
+
 public abstract class Person {
     private int id;
     private String firstName;
     private String lastName;
     private Date DoB;
 
-    public Person(int id, String firstName, String lastName, Date DoB){
-        this.id = id;
+
+
+    public Person(String firstName, String lastName, Date DoB){
         this.firstName = firstName;
         this.lastName = lastName;
         this.DoB = DoB;
