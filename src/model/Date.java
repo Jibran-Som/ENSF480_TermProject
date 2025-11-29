@@ -45,6 +45,10 @@ public class Date {
         this.year = year;
     }
 
+    public String toSQLDate() {
+        return String.format("%04d-%02d-%02d", year, month, day);
+    }
+
 
 
     @Override

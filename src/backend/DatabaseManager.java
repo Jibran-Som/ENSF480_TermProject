@@ -173,14 +173,14 @@ public class DatabaseManager {
 
     public int updatePerson(Person person) throws SQLException {
         String[] columns = {"first_name", "last_name", "date_born"};
-        Object[] values = {person.getFirstName(), person.getLastName(), person.getDoB()};
+
+        String sqlDate = person.getDoB().toSQLDate(); // Make sure your Date class has this method
+        Object[] values = {person.getFirstName(), person.getLastName(), sqlDate};
+
         String whereClause = "person_id = ?";
         Object[] whereValues = {person.getId()};
         return update("person", columns, values, whereClause, whereValues);
     }
-
-
-
 
     public int update(String tableName, String[] columns, Object[] values, String whereClause, Object[] whereValues) throws SQLException {
         if (columns.length != values.length) {
@@ -201,15 +201,17 @@ public class DatabaseManager {
         }
 
         try (PreparedStatement pstmt = connection.prepareStatement(sql.toString())) {
+            int paramIndex = 1;
+
             // Set the SET clause values
             for (int i = 0; i < values.length; i++) {
-                pstmt.setObject(i + 1, values[i]);
+                pstmt.setObject(paramIndex++, values[i]);
             }
 
             // Set the WHERE clause values
             if (whereValues != null) {
                 for (int i = 0; i < whereValues.length; i++) {
-                    pstmt.setObject(values.length + i + 1, whereValues[i]);
+                    pstmt.setObject(paramIndex++, whereValues[i]);
                 }
             }
 
