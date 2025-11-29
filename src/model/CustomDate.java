@@ -1,17 +1,17 @@
 package model;
 
-public class Date {
+public class CustomDate {
     private int day;
     private int month;
     private int year;
 
-    public Date() {
+    public CustomDate() {
         this.day = 1;
         this.month = 1;
         this.year = 1970;
     }
 
-    public Date(int day, int month, int year){
+    public CustomDate(int day, int month, int year){
         this.day = day;
         this.month = month;
         this.year = year;
@@ -49,13 +49,13 @@ public class Date {
         return String.format("%04d-%02d-%02d", year, month, day);
     }
 
-    public static Date StringToDate(String date){
+    public static CustomDate StringToDate(String date){
         String[] parts = date.split("-");
         int year = Integer.parseInt(parts[0]);
         int month = Integer.parseInt(parts[1]);
         int day = Integer.parseInt(parts[2]);
 
-        return new Date(day, month, year);
+        return new CustomDate(day, month, year);
     }
 
     @Override

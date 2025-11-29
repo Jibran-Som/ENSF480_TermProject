@@ -10,7 +10,7 @@ public class Main {
         DatabaseManager db = DatabaseManager.getInstance();
         db.connect("admin_user", "admin_password");
 
-        Date date = new Date();
+        CustomDate customDate = new CustomDate();
         Address add = new Address();
         Address add1 = new Address("TTT", 123, "ayo", "pause", "popo", "mane");
         Route route = new Route(add, add1);
@@ -18,7 +18,7 @@ public class Main {
         Airline airline = new Airline("Yo");
         Airplane airplane = new Airplane(airline, "Uhh", 2);
         System.out.println("Airplane ID: " + airplane.getAirplaneID());
-        Flight f = new Flight(airplane, route, date, date, 0, "11:11", 10.12f);
+        Flight f = new Flight(airplane, route, customDate, customDate, 0, "11:11", 10.12f);
 
     }
 }
