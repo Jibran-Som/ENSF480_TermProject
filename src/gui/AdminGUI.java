@@ -36,14 +36,22 @@ public class AdminGUI extends JFrame {
     private JButton generateReportButton;
     private JButton viewPromotionsButton;
 
-    // Database Manager For Connectivity
+    // Controllers
     private DatabaseManager db = DatabaseManager.getInstance();
 
     public AdminGUI(String username) {
         this.currentUser = username;
-        db.connect("admin_user", "admin_password");
+        try {
+            db.connect("agent_user", "agent_password");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, 
+                "Database connection failed: " + e.getMessage(),
+                "Connection Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
         initializeGUI();
     }
+    
 
     private void initializeGUI() {
         setTitle("Flight Reservation System - Administrator Dashboard");
@@ -263,13 +271,10 @@ public class AdminGUI extends JFrame {
 
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        generateReportButton = new JButton("Generate System Report");
         viewPromotionsButton = new JButton("Manage Promotions");
 
-        generateReportButton.addActionListener(new GenerateReportListener());
         viewPromotionsButton.addActionListener(new ViewPromotionsListener());
 
-        buttonPanel.add(generateReportButton);
         buttonPanel.add(viewPromotionsButton);
 
         panel.add(buttonPanel, BorderLayout.NORTH);
@@ -553,18 +558,6 @@ public class AdminGUI extends JFrame {
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             }
-        }
-    }
-
-    private class GenerateReportListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            systemLogArea.append("System report generated at: " + java.time.LocalDateTime.now() + "\n");
-            JOptionPane.showMessageDialog(AdminGUI.this,
-                "System report generated.\n" +
-                "This functionality will create detailed reports when implemented.",
-                "Generate Report",
-                JOptionPane.INFORMATION_MESSAGE);
         }
     }
 

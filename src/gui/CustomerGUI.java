@@ -297,6 +297,12 @@ public class CustomerGUI extends JFrame {
             for (Booking booking : allBookings) {
                 if (booking.getCustomer().getId() == currentCustomer.getId()) {
                     Flight flight = booking.getFlight();
+                    ArrayList<Flight> flights = flightController.getAllFlights();
+                    for(Flight f : flights){
+                        if(flight.getFlightID() == f.getFlightID()){
+                            flight = f;
+                        }
+                    }
                     Object[] row = {
                         booking.getBookingId(),
                         flight.getFlightID(),
