@@ -11,6 +11,8 @@ import service.BookingController;
 import model.*;
 import backend.DatabaseManager;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class CustomerGUI extends JFrame {
     private String currentUser;
@@ -449,6 +451,7 @@ public class CustomerGUI extends JFrame {
                 String airline = (String) flightTableModel.getValueAt(selectedRow, 1);
                 String departure = (String) flightTableModel.getValueAt(selectedRow, 2);
                 String destination = (String) flightTableModel.getValueAt(selectedRow, 3);
+                double price = Double.parseDouble(((String) flightTableModel.getValueAt(selectedRow, 6)).replace("$", ""));
                 int availableSeats = (int) flightTableModel.getValueAt(selectedRow, 7);
 
                 if (availableSeats <= 0) {
@@ -509,7 +512,66 @@ public class CustomerGUI extends JFrame {
                                 JOptionPane.WARNING_MESSAGE);
                             return;
                         }
+                        Object[] options = {"Credit Card", "PayPal"};
+                        int choice = JOptionPane.showOptionDialog(CustomerGUI.this,
+                            "Please choose a payment method:",
+                            "Payment Method",
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE,
+                            null, options, options[0]);
 
+                        if (choice == -1) {
+                            // User cancelled the payment choice
+                            return;
+                        }
+                        else if(choice == 0){
+                            CreditCardPaymentDialog cardDialog = new CreditCardPaymentDialog(CustomerGUI.this);
+                            cardDialog.setVisible(true);
+                            Card card = new Card(cardDialog.getCardNumber(), cardDialog.getHolderName(), cardDialog.getExpiryDate(), cardDialog.getCvv());
+                            currentCustomer.setPaymentStrategy(new CreditCardPayment(card));
+                            if (!cardDialog.isConfirmed()) {
+                                return;
+                            }
+
+                            String payed = currentCustomer.processPayment(price);
+                            if(payed.equals("Failed")){
+                                JOptionPane.showMessageDialog(CustomerGUI.this,
+                                "Payment failed.",
+                                "Payment Failure",
+                                JOptionPane.WARNING_MESSAGE);
+                                return;
+                            }
+                            else{
+                                JOptionPane.showMessageDialog(CustomerGUI.this,
+                                    "Paid via Credit Card: $" + price,
+                                    "Payment Successful",
+                                    JOptionPane.INFORMATION_MESSAGE);                           
+                            }
+                        }
+    
+                        else if(choice == 1){
+                            PayPalPaymentDialog ppDialog = new PayPalPaymentDialog(CustomerGUI.this);
+                            ppDialog.setVisible(true);
+                            Card card = new Card(ppDialog.getCardNumber(), ppDialog.getHolderName(), ppDialog.getExpiryDate(), ppDialog.getCvv());
+                            currentCustomer.setPaymentStrategy(new PayPalPayment(card));
+                            if (!ppDialog.isConfirmed()) {
+                                return;
+                            }
+
+                            String payed = currentCustomer.processPayment(price);
+                            if(payed.equals("Failed")){
+                                JOptionPane.showMessageDialog(CustomerGUI.this,
+                                "Payment failed.",
+                                "Payment Failure",
+                                JOptionPane.WARNING_MESSAGE);
+                                return;
+                            }
+                            else{
+                                JOptionPane.showMessageDialog(CustomerGUI.this,
+                                    "Paid via PayPal: $" + price,
+                                    "Payment Successful",
+                                    JOptionPane.INFORMATION_MESSAGE);                           
+                            }
+                        }
                         // Create the booking
                         Booking newBooking = bookingController.createBooking(currentCustomer, selectedFlight, seatNumber);
                         
@@ -672,6 +734,163 @@ public class CustomerGUI extends JFrame {
             }
         }
     }
+
+public class CreditCardPaymentDialog extends JDialog {
+    private JTextField cardNumberField;
+    private JTextField holderNameField;
+    private JTextField expiryDateField;
+    private JTextField cvvField;
+    private boolean isConfirmed = false;
+
+    public CreditCardPaymentDialog(Frame parent) {
+        super(parent, "Enter Credit Card Details", true);
+
+        // Create the input fields and labels
+        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
+
+        panel.add(new JLabel("Card Number:"));
+        cardNumberField = new JTextField();
+        panel.add(cardNumberField);
+
+        panel.add(new JLabel("Holder Name:"));
+        holderNameField = new JTextField();
+        panel.add(holderNameField);
+
+        panel.add(new JLabel("Expiry Date (MM/YY):"));
+        expiryDateField = new JTextField();
+        panel.add(expiryDateField);
+
+        panel.add(new JLabel("CVV:"));
+        cvvField = new JTextField();
+        panel.add(cvvField);
+
+        // Add buttons for confirmation
+        JPanel buttonPanel = new JPanel();
+        JButton confirmButton = new JButton("Confirm");
+        String regex = "^(0[1-9]|1[0-2])\\/\\d{2}$";
+        confirmButton.addActionListener(e -> {
+            // Validate the fields before confirming
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(getExpiryDate());
+            if (!getCardNumber().isEmpty() && !getHolderName().isEmpty() && !getExpiryDate().isEmpty()
+                && !getCvv().isEmpty() && matcher.matches()) {
+                isConfirmed = true;
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Please fill in all fields correctly.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        buttonPanel.add(confirmButton);
+
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(e -> dispose());
+        buttonPanel.add(cancelButton);
+
+        panel.add(buttonPanel);
+
+        add(panel);
+        setSize(350, 250);
+        setLocationRelativeTo(parent);
+    }
+    public String getCardNumber() {
+        return cardNumberField.getText().trim();
+    }
+
+    public String getHolderName() {
+        return holderNameField.getText().trim();
+    }
+
+    public String getExpiryDate() {
+        return expiryDateField.getText().trim();
+    }
+
+    public String getCvv() {
+        return cvvField.getText().trim();
+    }
+
+    private boolean isConfirmed(){
+        return this.isConfirmed;
+    }
+}
+
+public class PayPalPaymentDialog extends JDialog {
+    private JTextField cardNumberField;
+    private JTextField holderNameField;
+    private JTextField expiryDateField;
+    private JTextField cvvField;
+    private boolean isConfirmed = false;
+
+    public PayPalPaymentDialog(Frame parent) {
+        super(parent, "Enter PayPal Details", true);
+
+        // Create the input fields and labels
+        JPanel panel = new JPanel(new GridLayout(5, 2, 10, 10));
+
+        panel.add(new JLabel("Card Number:"));
+        cardNumberField = new JTextField();
+        panel.add(cardNumberField);
+
+        panel.add(new JLabel("Holder Name:"));
+        holderNameField = new JTextField();
+        panel.add(holderNameField);
+
+        panel.add(new JLabel("Expiry Date (MM/YY):"));
+        expiryDateField = new JTextField();
+        panel.add(expiryDateField);
+
+        panel.add(new JLabel("CVV:"));
+        cvvField = new JTextField();
+        panel.add(cvvField);
+
+        // Add buttons for confirmation
+        JPanel buttonPanel = new JPanel();
+        JButton confirmButton = new JButton("Confirm");
+        String regex = "^(0[1-9]|1[0-2])\\/\\d{2}$";
+        confirmButton.addActionListener(e -> {
+            // Validate the fields before confirming
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(getExpiryDate());
+            if (!getCardNumber().isEmpty() && !getHolderName().isEmpty() && !getExpiryDate().isEmpty()
+                && !getCvv().isEmpty() && matcher.matches()) {
+                isConfirmed = true;
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Please fill in all fields correctly.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        buttonPanel.add(confirmButton);
+
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(e -> dispose());
+        buttonPanel.add(cancelButton);
+
+        panel.add(buttonPanel);
+
+        add(panel);
+        setSize(350, 250);
+        setLocationRelativeTo(parent);
+    }
+
+    public String getCardNumber() {
+        return cardNumberField.getText().trim();
+    }
+
+    public String getHolderName() {
+        return holderNameField.getText().trim();
+    }
+
+    public String getExpiryDate() {
+        return expiryDateField.getText().trim();
+    }
+
+    public String getCvv() {
+        return cvvField.getText().trim();
+    }    
+
+    private boolean isConfirmed(){
+        return this.isConfirmed;
+    }
+}
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {

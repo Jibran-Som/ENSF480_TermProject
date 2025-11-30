@@ -5,6 +5,7 @@ public class Customer extends Person {
     private Address address;
     private String email;
     private String phoneNumber;
+    private PaymentStrategy paymentStrategy;
 
     public Customer(String username, String firstName, String lastName, CustomDate DoB, Address address, String email, String phoneNumber) {
         super(username, firstName, lastName, DoB);
@@ -34,7 +35,11 @@ public class Customer extends Person {
     public void setAddress(Address address) { this.address = address; }
     public void setEmail(String email) { this.email = email; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    public void setPaymentStrategy(PaymentStrategy paymentStrategy) {this.paymentStrategy = paymentStrategy; }
 
+    public String processPayment(double amount){
+        return paymentStrategy.pay(amount);
+    }
     @Override
     public String toString() {
         return "Customer{id=" + getId() + ", username='" + getUsername() + "', firstName='" + getFirstName() + 
