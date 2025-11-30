@@ -100,15 +100,15 @@ public class DatabaseManager {
         }
     }
 
-    public int insertPerson(String firstName, String lastName, String dateBorn, String role) throws SQLException {
-        String[] columns = {"first_name", "last_name", "date_born", "role"};
-        Object[] values = {firstName, lastName, dateBorn, role};
+    public int insertPerson(String username, String firstName, String lastName, String dateBorn, String role) throws SQLException {
+        String[] columns = {"username", "first_name", "last_name", "date_born", "role"};
+        Object[] values = {username, firstName, lastName, dateBorn, role};
         return insert("person", columns, values, true);
     }
 
-    public int insertPerson(String firstName, String lastName, String dateBorn, String password, String role) throws SQLException {
-        String[] columns = {"first_name", "last_name", "date_born", "password", "role"};
-        Object[] values = {firstName, lastName, dateBorn, password, role};
+    public int insertPerson(String username, String firstName, String lastName, String dateBorn, String password, String role) throws SQLException {
+        String[] columns = {"username", "first_name", "last_name", "date_born", "password", "role"};
+        Object[] values = {username, firstName, lastName, dateBorn, password, role};
         return insert("person", columns, values, true);
     }
 
@@ -358,12 +358,12 @@ public class DatabaseManager {
 
     public ArrayList<Customer> getAllCustomers() throws SQLException {
         ArrayList<Customer> customers = new ArrayList<>();
-        String query = "SELECT p.person_id, p.first_name, p.last_name, p.date_born, c.email " +
+        String query = "SELECT p.person_id, p.username, p.first_name, p.last_name, p.date_born, c.email " +
             "FROM person p JOIN customer c ON p.person_id = c.customer_id " +
             "WHERE p.role = 'Customer'";
 
         try (PreparedStatement pstmt = connection.prepareStatement(query);
-             ResultSet rs = pstmt.executeQuery()) {
+            ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
                 java.sql.Date dob = rs.getDate("date_born");
@@ -371,6 +371,7 @@ public class DatabaseManager {
 
                 Customer customer = new Customer(
                     rs.getInt("person_id"),
+                    rs.getString("username"),
                     rs.getString("first_name"),
                     rs.getString("last_name"),
                     dateOfBirth,
@@ -381,7 +382,6 @@ public class DatabaseManager {
         }
         return customers;
     }
-
 
     public ArrayList<Booking> getAllBookings() throws SQLException {
         ArrayList<Booking> bookings = new ArrayList<>();
@@ -407,7 +407,7 @@ public class DatabaseManager {
     }
 
     public Customer getCustomerById(int customerId) throws SQLException {
-        String query = "SELECT p.person_id, p.first_name, p.last_name, p.date_born, c.email " +
+        String query = "SELECT p.person_id, p.username, p.first_name, p.last_name, p.date_born, c.email " +
             "FROM person p JOIN customer c ON p.person_id = c.customer_id " +
             "WHERE p.person_id = ?";
 
@@ -421,6 +421,7 @@ public class DatabaseManager {
 
                 return new Customer(
                     rs.getInt("person_id"),
+                    rs.getString("username"),
                     rs.getString("first_name"),
                     rs.getString("last_name"),
                     dateOfBirth,
@@ -430,7 +431,6 @@ public class DatabaseManager {
         }
         return null;
     }
-
 
     public Flight getFlightById(int flightId) throws SQLException {
         // Simplified - in real implementation, join with related tables
@@ -458,9 +458,9 @@ public class DatabaseManager {
 
     // UPDATE METHODS
     public int updatePerson(Person person) throws SQLException {
-        String[] columns = {"first_name", "last_name", "date_born"};
+        String[] columns = {"username", "first_name", "last_name", "date_born"};
         String sqlDate = person.getDoB().toSQLDate();
-        Object[] values = {person.getFirstName(), person.getLastName(), sqlDate};
+        Object[] values = {person.getUsername(), person.getFirstName(), person.getLastName(), sqlDate};
         String whereClause = "person_id = ?";
         Object[] whereValues = {person.getId()};
         return update("person", columns, values, whereClause, whereValues);

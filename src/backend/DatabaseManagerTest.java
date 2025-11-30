@@ -45,17 +45,17 @@ public class DatabaseManagerTest {
     private static void testPersonOperations() throws SQLException {
         System.out.println("\n=== Testing Person Operations ===");
 
-        // Test inserting persons
-        int personId1 = db.insertPerson("Test", "Person1", "1990-01-01", "Customer");
+        // Test inserting persons with username
+        int personId1 = db.insertPerson("testuser1", "Test", "Person1", "1990-01-01", "Customer");
         testIdsToCleanup.add(personId1);
         System.out.println("✓ Inserted person 1. ID: " + personId1);
 
-        int personId2 = db.insertPerson("Test", "Person2", "1995-05-15", "password123", "Customer");
+        int personId2 = db.insertPerson("testuser2", "Test", "Person2", "1995-05-15", "password123", "Customer");
         testIdsToCleanup.add(personId2);
         System.out.println("✓ Inserted person 2 with password. ID: " + personId2);
 
-        // Test updating person
-        Person personToUpdate = new Customer(personId1, "Updated", "Name",
+        // Test updating person - you'll need to create a Customer with username
+        Customer personToUpdate = new Customer(personId1, "updateduser", "Updated", "Name",
             CustomDate.StringToDate("1990-01-01"), "test@email.com");
         int updated = db.updatePerson(personToUpdate);
         System.out.println("✓ Updated " + updated + " person record");
@@ -65,7 +65,7 @@ public class DatabaseManagerTest {
         System.out.println("\n=== Testing Customer Operations ===");
 
         // Create test customer
-        int customerId = db.insertPerson("Customer", "Test", "1988-08-08", "Customer");
+        int customerId = db.insertPerson("ct", "Customer", "Test", "1988-08-08", "Customer");
         testIdsToCleanup.add(customerId);
         db.insertCustomer(customerId, "customer.test@email.com");
         System.out.println("✓ Created customer. ID: " + customerId);
@@ -89,13 +89,13 @@ public class DatabaseManagerTest {
         System.out.println("\n=== Testing Agent Operations ===");
 
         // Create test agent
-        int agentId = db.insertPerson("Agent", "Test", "1985-06-20", "agentpass", "FlightAgent");
+        int agentId = db.insertPerson("at", "Agent", "Test", "1985-06-20", "agentpass", "FlightAgent");
         testIdsToCleanup.add(agentId);
         db.insertAgent(agentId);
         System.out.println("✓ Created agent. ID: " + agentId);
 
         // Create customer for agent relationship
-        int customerId = db.insertPerson("Agent", "Customer", "1992-02-02", "Customer");
+        int customerId = db.insertPerson("ag", "Agent", "Customer", "1992-02-02", "Customer");
         testIdsToCleanup.add(customerId);
         db.insertCustomer(customerId, "agent.customer@email.com");
 
@@ -224,7 +224,7 @@ public class DatabaseManagerTest {
         System.out.println("\n=== Testing Booking Operations ===");
 
         // Create customer
-        int customerId = db.insertPerson("Booking", "Customer", "1992-02-02", "Customer");
+        int customerId = db.insertPerson("bc", "Booking", "Customer", "1992-02-02", "Customer");
         testIdsToCleanup.add(customerId);
         db.insertCustomer(customerId, "booking.customer@email.com");
 
@@ -261,7 +261,7 @@ public class DatabaseManagerTest {
         System.out.println("\n=== Testing Delete Operations ===");
 
         // Test 1: Delete booking by customer
-        int testCustomerId = db.insertPerson("Delete", "TestCustomer", "1994-04-04", "Customer");
+        int testCustomerId = db.insertPerson("dtc", "Delete", "TestCustomer", "1994-04-04", "Customer");
         db.insertCustomer(testCustomerId, "delete.customer@email.com");
 
         ArrayList<Flight> flights = db.getAllFlights();
@@ -282,12 +282,12 @@ public class DatabaseManagerTest {
         }
 
         // Test 3: Delete person
-        int testPersonId = db.insertPerson("Delete", "Person", "1995-05-05", "Customer");
+        int testPersonId = db.insertPerson("dp", "Delete", "Person", "1995-05-05", "Customer");
         int deleted = db.deletePerson(testPersonId);
         System.out.println("✓ Deleted person: " + deleted + " records");
 
         // Test 4: Delete customer
-        int testCustomerId2 = db.insertPerson("Delete", "Customer2", "1996-06-06", "Customer");
+        int testCustomerId2 = db.insertPerson("dc2", "Delete", "Customer2", "1996-06-06", "Customer");
         db.insertCustomer(testCustomerId2, "delete.customer2@email.com");
         deleted = db.deleteCustomer(testCustomerId2);
         System.out.println("✓ Deleted customer: " + deleted + " records");
@@ -299,7 +299,7 @@ public class DatabaseManagerTest {
         System.out.println("\n=== Testing Utility Methods ===");
 
         // Test existence checks
-        int testPersonId = db.insertPerson("Utility", "Test", "1997-07-07", "Customer");
+        int testPersonId = db.insertPerson("ut", "Utility", "Test", "1997-07-07", "Customer");
         testIdsToCleanup.add(testPersonId);
 
         // Note: The actual existence check methods would need to be implemented

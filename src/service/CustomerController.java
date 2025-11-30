@@ -1,4 +1,4 @@
-// CustomerService.java
+// CustomerController.java
 package service;
 
 import model.*;
@@ -9,16 +9,17 @@ import java.util.ArrayList;
 public class CustomerController {
     private DatabaseManager db = DatabaseManager.getInstance();
 
-    public Customer createCustomer(String firstName, String lastName, CustomDate dob,
+    // Update to include username parameter
+    public Customer createCustomer(String username, String firstName, String lastName, CustomDate dob,
                                    String email, String phoneNumber) throws SQLException {
-        // Insert into person table
-        int personId = db.insertPerson(firstName, lastName, dob.toSQLDate(), "Customer");
+        // Insert into person table with username
+        int personId = db.insertPerson(username, firstName, lastName, dob.toSQLDate(), "Customer");
 
         // Insert into customer table
         db.insertCustomer(personId, email);
 
-        // Return customer object
-        return new Customer(personId, firstName, lastName, dob, email);
+        // Return customer object with username
+        return new Customer(personId, username, firstName, lastName, dob, email);
     }
 
     public Customer getCustomer(int customerId) throws SQLException {

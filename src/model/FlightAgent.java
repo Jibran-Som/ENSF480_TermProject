@@ -6,13 +6,13 @@ import java.util.ArrayList;
 public class FlightAgent extends Person {
     private ArrayList<Customer> clients;
 
-    public FlightAgent(int id, String firstName, String lastName, CustomDate DoB, ArrayList<Customer> clients) {
-        super(id, firstName, lastName, DoB);
+    public FlightAgent(int id, String username, String firstName, String lastName, CustomDate DoB, ArrayList<Customer> clients) {
+        super(id, username, firstName, lastName, DoB);
         this.clients = clients;
     }
 
-    public FlightAgent(String firstName, String lastName, CustomDate DoB) {
-        super(firstName, lastName, DoB);
+    public FlightAgent(String username, String firstName, String lastName, CustomDate DoB) {
+        super(username, firstName, lastName, DoB);
         this.clients = new ArrayList<>();
     }
 
@@ -24,7 +24,7 @@ public class FlightAgent extends Person {
 
     @Override
     public String toString() {
-        return "FlightAgent{id=" + getId() + ", name=" + getFirstName() + " " + getLastName() +
+        return "FlightAgent{id=" + getId() + ", username='" + getUsername() + "', name=" + getFirstName() + " " + getLastName() +
             ", clients=" + clients.size() + "}";
     }
 }

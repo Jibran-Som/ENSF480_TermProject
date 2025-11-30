@@ -6,22 +6,22 @@ public class Customer extends Person {
     private String email;
     private String phoneNumber;
 
-    public Customer(String firstName, String lastName, CustomDate DoB, Address address, String email, String phoneNumber) {
-        super(firstName, lastName, DoB);
+    public Customer(String username, String firstName, String lastName, CustomDate DoB, Address address, String email, String phoneNumber) {
+        super(username, firstName, lastName, DoB);
         this.address = address;
         this.email = email;
         this.phoneNumber = phoneNumber;
     }
 
-    public Customer(int id, String firstName, String lastName, CustomDate DoB, String email) {
-        super(id, firstName, lastName, DoB);
+    public Customer(int id, String username, String firstName, String lastName, CustomDate DoB, String email) {
+        super(id, username, firstName, lastName, DoB);
         this.email = email;
         this.phoneNumber = "";
         this.address = null;
     }
 
-    public Customer(String firstName, String lastName, CustomDate DoB) {
-        super(firstName, lastName, DoB);
+    public Customer(String username, String firstName, String lastName, CustomDate DoB) {
+        super(username, firstName, lastName, DoB);
         this.email = "";
         this.phoneNumber = "";
         this.address = null;
@@ -37,7 +37,7 @@ public class Customer extends Person {
 
     @Override
     public String toString() {
-        return "Customer{id=" + getId() + ", firstName='" + getFirstName() + "', lastName='" + getLastName() +
-            "', email='" + email + "', phone='" + phoneNumber + "'}";
+        return "Customer{id=" + getId() + ", username='" + getUsername() + "', firstName='" + getFirstName() + 
+            "', lastName='" + getLastName() + "', email='" + email + "', phone='" + phoneNumber + "'}";
     }
 }
