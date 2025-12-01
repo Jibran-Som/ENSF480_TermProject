@@ -6,62 +6,89 @@ import java.sql.*;
 import java.util.ArrayList;
 
 public class DatabaseManager {
-    private static DatabaseManager instance;
+    private static DatabaseManager instance; // Static instance of Database Manager for Singleton Patter
     private static final String URL = "jdbc:mysql://localhost:3306/FLIGHTRESERVE?useSSL=false&allowPublicKeyRetrieval=true";
-    private String user;
-    private String password;
-    private Connection connection;
+    private String user; // Username for connecting to database
+    private String password; // Password for connecting to database
+    private Connection connection; // SQL lib specific connection
 
-    private DatabaseManager() {}
+    private DatabaseManager() {} // Private constructor following Singleton Pattern
 
-    public static DatabaseManager getInstance() {
+    /**
+     * Returns the singleton instance of DatabaseManager
+     * Creates a new instance if one doesn't exist
+     *
+     * @return Singleton Database Manager Instance
+     * */
+    public static DatabaseManager getInstance() { // Getting instance still following singleton pattern
         if (instance == null) {
-            instance = new DatabaseManager();
+            instance = new DatabaseManager(); // Creating new instance of database
         }
         return instance;
     }
 
-    public void connect(String user, String password) {
+    /**
+     * Establishes connect
+     *
+     *
+     * @param user Database username
+     * @param password Database password
+     * */
+    public void connect(String user, String password) { 
         this.user = user;
         this.password = password;
         try {
             connection = DriverManager.getConnection(URL, this.user, this.password);
             System.out.println("Connected to the database.");
-        } catch (SQLException e) {
+        }
+        catch (SQLException e) {
             System.out.println("Error connecting to the database.");
-            e.printStackTrace();
         }
     }
 
+    // Disconnecting from database
     public void disconnect() {
         try {
             if (connection != null && !connection.isClosed()) {
                 connection.close();
                 System.out.println("Disconnected from the database.");
             }
-        } catch (SQLException e) {
+        }
+        catch (SQLException e) { // Catching error to avoid throwing it
             System.out.println("Error disconnecting from the database.");
         }
     }
 
-    public boolean isConnected() {
+    public boolean isConnected() { // Helper function used in early development to check the connection is maintained
         try {
             return connection != null && !connection.isClosed();
-        } catch (SQLException e) {
+        }
+        catch (SQLException e) { // If null error returns false
             return false;
         }
     }
 
-    // INSERT METHODS
+    /**
+     * Generic insert method (Created due to the constant updates in the SQL
+     * database and added data members
+     *
+     *
+     * @param tableName Name of the table to insert into
+     * @param columns Array of column names
+     * @param values Array of values corresponding to columns
+     * @param expectGeneratedKey Whether to return auto-generated key
+     * @return Generated key if expectGeneratedKey is true, -1 otherwise (As objects
+     * like airline and promotions have non-auto gen. keys
+     */
     public int insert(String tableName, String[] columns, Object[] values, boolean expectGeneratedKey) throws SQLException {
-        if (columns.length != values.length) {
+        if (columns.length != values.length) { // Checks if length = values
             throw new IllegalArgumentException("Columns and values arrays must match");
         }
 
         StringBuilder sql = new StringBuilder("INSERT INTO " + tableName + " (");
-        StringBuilder placeholders = new StringBuilder(") VALUES (");
+        StringBuilder placeholders = new StringBuilder(") VALUES ("); // Builds string query
 
-        for (int i = 0; i < columns.length; i++) {
+        for (int i = 0; i < columns.length; i++) { // Appends question marks for safe query
             sql.append(columns[i]);
             placeholders.append("?");
             if (i < columns.length - 1) {
@@ -75,7 +102,8 @@ public class DatabaseManager {
         PreparedStatement pstmt;
         if (expectGeneratedKey) {
             pstmt = connection.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS);
-        } else {
+        }
+        else {
             pstmt = connection.prepareStatement(sql.toString());
         }
 
@@ -92,20 +120,25 @@ public class DatabaseManager {
             ResultSet generatedKeys = pstmt.getGeneratedKeys();
             if (generatedKeys.next()) {
                 return generatedKeys.getInt(1);
-            } else {
+            }
+            else {
                 throw new SQLException("Insert failed, no ID obtained.");
             }
-        } else {
+        }
+        else {
             return -1;
         }
     }
 
+    // Insert person method 1
     public int insertPerson(String username, String firstName, String lastName, String dateBorn, String role) throws SQLException {
         String[] columns = {"username", "first_name", "last_name", "date_born", "role"};
         Object[] values = {username, firstName, lastName, dateBorn, role};
         return insert("person", columns, values, true);
     }
-
+    // Insert person method 2
+    // This method was created when password was a decided to be a data member instead of being directly inputted to the
+    // database for saftey
     public int insertPerson(String username, String firstName, String lastName, String dateBorn, String password, String role) throws SQLException {
         String[] columns = {"username", "first_name", "last_name", "date_born", "password", "role"};
         Object[] values = {username, firstName, lastName, dateBorn, password, role};
@@ -130,6 +163,7 @@ public class DatabaseManager {
         return insert("airline", columns, values, false);
     }
 
+    // Insets Airplane
     public int insertAirplane(String airlineName, String name, int flightNumber) throws SQLException {
         String[] columns = {"airline_name", "name", "flight_number"};
         Object[] values = {airlineName, name, flightNumber};
@@ -238,6 +272,7 @@ public class DatabaseManager {
         return airplanes;
     }
 
+    // Get all routes
     public ArrayList<Route> getAllRoutes() throws SQLException {
         ArrayList<Route> routes = new ArrayList<>();
         String query = "SELECT r.*, o.*, d.* FROM route r " +
@@ -341,7 +376,7 @@ public class DatabaseManager {
             ResultSet rs = pstmt.executeQuery();
 
             if (rs.next()) {
-                Address origin = new Address(
+                Address origin = new Address( // Creating address
                     rs.getInt("o.address_id"),
                     rs.getString("o.postal_code"),
                     rs.getInt("o.number"),
@@ -368,6 +403,7 @@ public class DatabaseManager {
     }
 
 
+    // Gets exclusively customers
     public ArrayList<Customer> getAllCustomers() throws SQLException {
         ArrayList<Customer> customers = new ArrayList<>();
         String query = "SELECT p.person_id, p.username, p.first_name, p.last_name, p.date_born, c.email " +
@@ -447,6 +483,7 @@ public class DatabaseManager {
     }
 
 
+    // Gets all booking via SQL SELECT query
     public ArrayList<Booking> getAllBookings() throws SQLException {
         ArrayList<Booking> bookings = new ArrayList<>();
         String query = "SELECT b.* FROM booking b";
@@ -470,9 +507,10 @@ public class DatabaseManager {
         return bookings;
     }
 
+    // Gets all promotions for Customer and Admin GUI
     public ArrayList<Promotion> getAllPromotions() throws SQLException {
         ArrayList<Promotion> promotions = new ArrayList<>();
-        String query = "SELECT * FROM promotion ORDER BY start_date DESC";
+        String query = "SELECT * FROM promotion ORDER BY start_date DESC"; // Query
 
         try (PreparedStatement pstmt = connection.prepareStatement(query);
              ResultSet rs = pstmt.executeQuery()) {
@@ -493,6 +531,7 @@ public class DatabaseManager {
         return promotions;
     }
 
+    //Helper function that gets promotions by code
     public Promotion getPromotionByCode(String promoCode) throws SQLException {
         String query = "SELECT * FROM promotion WHERE promo_code = ?";
 
@@ -575,6 +614,7 @@ public class DatabaseManager {
         return update("person", columns, values, whereClause, whereValues);
     }
 
+
     public int updatePromotion(String promoCode, int discountRate, String description, CustomDate startDate) throws SQLException {
         String[] columns = {"discount_rate", "description", "start_date"};
         java.sql.Date sqlStartDate = java.sql.Date.valueOf(startDate.toSQLDate());
@@ -641,6 +681,16 @@ public class DatabaseManager {
     }
 
 
+    /**
+     * Generic update method that can update any table.
+     *
+     * @param tableName Name of the table to update
+     * @param columns Array of column names to update
+     * @param values Array of new values for columns
+     * @param whereClause WHERE clause for update condition
+     * @param whereValues Values for WHERE clause parameters
+     * @return Number of rows affected
+     */
     public int update(String tableName, String[] columns, Object[] values, String whereClause, Object[] whereValues) throws SQLException {
         if (columns.length != values.length) {
             throw new IllegalArgumentException("Columns and values arrays must have the same length");
@@ -666,6 +716,16 @@ public class DatabaseManager {
     }
 
     // DELETE METHODS
+
+
+    /**
+     * Generic delete method
+     *
+     * @param tableName Name of table
+     * @param whereClause WHERE clause for deletion condition
+     * @param whereValues values
+     * @return Num of rows affected
+     * */
     public int delete(String tableName, String whereClause, Object[] whereValues) throws SQLException {
         if (whereClause == null || whereClause.trim().isEmpty()) {
             throw new IllegalArgumentException("WHERE clause cannot be null or empty for DELETE.");
@@ -682,42 +742,49 @@ public class DatabaseManager {
         }
     }
 
+    // Delete promotions
     public int deletePromotion(String promoCode) throws SQLException {
         return delete("promotion", "promo_code = ?", new Object[]{promoCode});
     }
 
+    // Delete flights
     public int deleteFlight(int flightId) throws SQLException {
         return delete("flight", "flight_id = ?", new Object[]{flightId});
     }
 
+    // Delete booking
     public int deleteBooking(int bookingId) throws SQLException {
         return delete("booking", "booking_id = ?", new Object[]{bookingId});
     }
 
+    // Delete person
     public int deletePerson(int personId) throws SQLException {
         // First check if person is a customer and delete from customer table
         try {
             delete("customer", "customer_id = ?", new Object[]{personId});
-        } catch (SQLException e) {
-            // Ignore if not a customer
+        }
+        catch (SQLException e) {
+            // Ignore
         }
 
         // Check if person is an agent and delete from agent table
         try {
             delete("agent", "agent_id = ?", new Object[]{personId});
-        } catch (SQLException e) {
-            // Ignore if not an agent
+        }
+        catch (SQLException e) {
+            // Ignore
         }
 
         // Delete from agent_customer if exists
         try {
             delete("agent_customer", "agent_id = ?", new Object[]{personId});
             delete("agent_customer", "customer_id = ?", new Object[]{personId});
-        } catch (SQLException e) {
-            // Ignore if no agent_customer records
+        }
+        catch (SQLException e) {
+            // Ignore
         }
 
-        // Finally delete from person table
+        // Delete from person table
         return delete("person", "person_id = ?", new Object[]{personId});
     }
 
@@ -737,35 +804,22 @@ public class DatabaseManager {
         return result;
     }
 
+    // Delete FlightAgent
     public int deleteAgent(int agentId) throws SQLException {
-        // First delete from agent_customer table
+        // Del from agent_customer table
         delete("agent_customer", "agent_id = ?", new Object[]{agentId});
 
-        // Delete from agent table
+        // Del from agent table
         int result = delete("agent", "agent_id = ?", new Object[]{agentId});
 
-        // Also delete from person table
+        // Del from person table
         delete("person", "person_id = ?", new Object[]{agentId});
 
-        return result;
-    }
-
-    public int deleteAirline(String airlineName) throws SQLException {
-        // First get all airplanes for this airline
-        ArrayList<Airplane> airplanes = getAllAirplanes();
-        for (Airplane airplane : airplanes) {
-            if (airplane.getAirline().getName().equals(airlineName)) {
-                deleteAirplane(airplane.getAirplaneID());
-            }
-        }
-
-        // Then delete the airline
-        return delete("airline", "airline_name = ?", new Object[]{airlineName});
+        return result; // Return if successful
     }
 
     public void deleteAirplane(int airplaneId) throws SQLException {
         try {
-            // Start transaction
             connection.setAutoCommit(false);
 
             // 1. Get all flights using this airplane
@@ -792,28 +846,31 @@ public class DatabaseManager {
             // 4. Finally delete the airplane
             delete("airplane", "airplane_id = ?", new Object[]{airplaneId});
 
-            // Commit transaction
             connection.commit();
 
-        } catch (SQLException e) {
-            // Rollback on error
+        }
+        catch (SQLException e) {
+            //
             try {
                 connection.rollback();
-            } catch (SQLException rollbackEx) {
-                rollbackEx.printStackTrace();
             }
-            throw e;
-        } finally {
+            catch (SQLException rollbackEx) {
+                System.out.println("Rollback error.");
+            }
+        }
+        finally {
             try {
                 connection.setAutoCommit(true);
-            } catch (SQLException autoCommitEx) {
-                autoCommitEx.printStackTrace();
+            }
+            catch (SQLException autoCommitEx) {
+                System.out.println("Auto commit failed");
             }
         }
     }
 
+    // Deleting address
     public int deleteAddress(int addressId) throws SQLException {
-        // First check if address is used in any routes
+        // Check if address is used in any routes
         ArrayList<Route> routes = getAllRoutes();
         for (Route route : routes) {
             if (route.getDepartureLocation().getAddressID() == addressId ||
@@ -826,8 +883,9 @@ public class DatabaseManager {
         return delete("address", "address_id = ?", new Object[]{addressId});
     }
 
+    //Deleting routes method
     public int deleteRoute(int routeId) throws SQLException {
-        // First get all flights using this route
+        // Get all flights using this routeId
         ArrayList<Flight> flights = getAllFlights();
         for (Flight flight : flights) {
             if (flight.getRoute() != null && flight.getRoute().getRouteID() == routeId) {
@@ -839,19 +897,19 @@ public class DatabaseManager {
         return delete("route", "route_id = ?", new Object[]{routeId});
     }
 
+
+    // Deleting booking by customer
     public int deleteBookingByCustomer(int customerId) throws SQLException {
         return delete("booking", "customer_id = ?", new Object[]{customerId});
     }
 
+    // Delete booking by flight
     public int deleteBookingByFlight(int flightId) throws SQLException {
         return delete("booking", "flight_id = ?", new Object[]{flightId});
     }
 
-    public int deleteAgentCustomerRelationship(int agentId, int customerId) throws SQLException {
-        return delete("agent_customer", "agent_id = ? AND customer_id = ?", new Object[]{agentId, customerId});
-    }
 
-
+    // Directly updating password to avoid controllers
     public int updatePasswordDirectly(int personId, String newPassword) throws SQLException {
         String[] columns = {"password"};
         Object[] values = {newPassword};
@@ -862,6 +920,7 @@ public class DatabaseManager {
     }
 
 
+    // Directly access password to avoid putting it in model
     public String getPasswordForUser(int personId) throws SQLException {
         String query = "SELECT password FROM person WHERE person_id = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(query)) {
@@ -874,6 +933,7 @@ public class DatabaseManager {
         return null;
     }
 
+    // Helper function for early development
     public Airline getAirlineByName(String airlineName) throws SQLException {
         String query = "SELECT * FROM airline WHERE airline_name = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(query)) {
