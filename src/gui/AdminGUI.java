@@ -33,7 +33,6 @@ public class AdminGUI extends JFrame {
     private DefaultTableModel routeTableModel;
     private JTable routeTable;
     private JButton addRouteButton;
-    private JButton editRouteButton;
     private JButton removeRouteButton;
     private JButton refreshRoutesButton;
 
@@ -285,17 +284,14 @@ public class AdminGUI extends JFrame {
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         addRouteButton = new JButton("Add Route");
-        editRouteButton = new JButton("Edit Route");
         removeRouteButton = new JButton("Remove Route");
         refreshRoutesButton = new JButton("Refresh");
 
         addRouteButton.addActionListener(new AddRouteListener());
-        editRouteButton.addActionListener(new EditRouteListener());
         removeRouteButton.addActionListener(new RemoveRouteListener());
         refreshRoutesButton.addActionListener(new RefreshRoutesListener());
 
         buttonPanel.add(addRouteButton);
-        buttonPanel.add(editRouteButton);
         buttonPanel.add(removeRouteButton);
         buttonPanel.add(refreshRoutesButton);
 
@@ -712,29 +708,6 @@ public class AdminGUI extends JFrame {
         }
     }
 
-    private class EditRouteListener implements ActionListener {
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            int selectedRow = routeTable.getSelectedRow();
-            if (selectedRow == -1) {
-                JOptionPane.showMessageDialog(AdminGUI.this,
-                        "Please select a route to edit.",
-                        "No Selection",
-                        JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            // Object routeID = routeTableModel.getValueAt(selectedRow, 0);
-            // EditRouteDialog editDialog = new EditRouteDialog(
-            //         AdminGUI.this,
-            //         routeTableModel,
-            //         selectedRow,
-            //         routeID
-            // );
-
-            // editDialog.setVisible(true);
-        }
-    }
 
     private class RemoveRouteListener implements ActionListener {
         @Override
