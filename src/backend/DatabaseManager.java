@@ -818,6 +818,17 @@ public class DatabaseManager {
     }
 
 
+    public int updatePasswordDirectly(int personId, String newPassword) throws SQLException {
+        String[] columns = {"password"};
+        Object[] values = {newPassword};
+        String whereClause = "person_id = ?";
+        Object[] whereValues = {personId};
+
+        return update("person", columns, values, whereClause, whereValues);
+    }
+
+
+
 
 
 

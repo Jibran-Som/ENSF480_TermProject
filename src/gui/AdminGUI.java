@@ -36,22 +36,14 @@ public class AdminGUI extends JFrame {
     private JButton generateReportButton;
     private JButton viewPromotionsButton;
 
-    // Controllers
+    // Database Manager For Connectivity
     private DatabaseManager db = DatabaseManager.getInstance();
 
     public AdminGUI(String username) {
         this.currentUser = username;
-        try {
-            db.connect("agent_user", "agent_password");
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, 
-                "Database connection failed: " + e.getMessage(),
-                "Connection Error", 
-                JOptionPane.ERROR_MESSAGE);
-        }
+        db.connect("admin_user", "admin_password");
         initializeGUI();
     }
-    
 
     private void initializeGUI() {
         setTitle("Flight Reservation System - Administrator Dashboard");
@@ -271,10 +263,13 @@ public class AdminGUI extends JFrame {
 
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        generateReportButton = new JButton("Generate System Report");
         viewPromotionsButton = new JButton("Manage Promotions");
 
+        generateReportButton.addActionListener(new GenerateReportListener());
         viewPromotionsButton.addActionListener(new ViewPromotionsListener());
 
+        buttonPanel.add(generateReportButton);
         buttonPanel.add(viewPromotionsButton);
 
         panel.add(buttonPanel, BorderLayout.NORTH);
@@ -375,7 +370,7 @@ public class AdminGUI extends JFrame {
 
             int flightID = (int) flightTableModel.getValueAt(selectedRow, 0);
 
-            int result = db.deleteFlight(flightID); 
+            int result = db.deleteFlight(flightID);
 
             if (result >= 1) {
                 flightTableModel.removeRow(selectedRow);
@@ -512,7 +507,7 @@ public class AdminGUI extends JFrame {
 
             int personID = (int) userTableModel.getValueAt(selectedRow, 0);
             String role = (String) userTableModel.getValueAt(selectedRow, 5);
-            int result = 0; 
+            int result = 0;
             if(role.equalsIgnoreCase("Customer")){
                 result = db.deleteCustomer(personID);
             }
@@ -558,6 +553,18 @@ public class AdminGUI extends JFrame {
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             }
+        }
+    }
+
+    private class GenerateReportListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            systemLogArea.append("System report generated at: " + java.time.LocalDateTime.now() + "\n");
+            JOptionPane.showMessageDialog(AdminGUI.this,
+                "System report generated.\n" +
+                "This functionality will create detailed reports when implemented.",
+                "Generate Report",
+                JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
@@ -774,17 +781,18 @@ public class AdminGUI extends JFrame {
 
     private class AddUserDialog extends JDialog {
         private JTextField usernameField, fNameField, lNameField, dobField,
-                roleField, emailField;
+            roleField, emailField;
+        private JPasswordField passwordField;  // Add password field
         private DefaultTableModel model;
 
         public AddUserDialog(JFrame parent, DefaultTableModel model) {
             super(parent, "Add New User", true);
             this.model = model;
-            setSize(400, 450);
+            setSize(400, 500);  // Increased height for password field
             setLocationRelativeTo(parent);
             setLayout(new BorderLayout());
 
-            JPanel formPanel = new JPanel(new GridLayout(9, 2, 10, 10));
+            JPanel formPanel = new JPanel(new GridLayout(10, 2, 10, 10));  // Increased rows
             formPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 
             formPanel.add(new JLabel("Username:"));
@@ -802,6 +810,10 @@ public class AdminGUI extends JFrame {
             formPanel.add(new JLabel("Date of Birth (YYYY-MM-DD):"));
             dobField = new JTextField();
             formPanel.add(dobField);
+
+            formPanel.add(new JLabel("Password:"));
+            passwordField = new JPasswordField();
+            formPanel.add(passwordField);
 
             formPanel.add(new JLabel("Role:"));
             roleField = new JTextField();
@@ -826,8 +838,33 @@ public class AdminGUI extends JFrame {
                 String dob = dobField.getText();
                 String role = roleField.getText();
                 String email = emailField.getText();
-                int person_id = db.insertPerson(username, fname, lname, dob, role);
+                String password = new String(passwordField.getPassword());
+
+                // Validate required fields
+                if (username.isEmpty() || fname.isEmpty() || lname.isEmpty() ||
+                    dob.isEmpty() || role.isEmpty() || password.isEmpty()) {
+                    JOptionPane.showMessageDialog(this,
+                        "Please fill in all required fields.",
+                        "Validation Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Validate password length
+                if (password.length() < 6) {
+                    int result = JOptionPane.showConfirmDialog(this,
+                        "Password is shorter than 6 characters. Continue anyway?",
+                        "Weak Password",
+                        JOptionPane.YES_NO_OPTION);
+                    if (result != JOptionPane.YES_OPTION) {
+                        return;
+                    }
+                }
+
+                // Use the insertPerson method that includes password
+                int person_id = db.insertPerson(username, fname, lname, dob, password, role);
                 Object[] rowData = null;
+
                 if(role.equalsIgnoreCase("Customer")){
                     rowData = new Object[] {
                         person_id,
@@ -840,8 +877,7 @@ public class AdminGUI extends JFrame {
                     };
                     db.insertCustomer(person_id, email);
                 }
-
-                else if(role.equalsIgnoreCase("Agent")){
+                else if(role.equalsIgnoreCase("FlightAgent") || role.equalsIgnoreCase("Agent")){
                     rowData = new Object[] {
                         person_id,
                         username,
@@ -863,43 +899,48 @@ public class AdminGUI extends JFrame {
                         role,
                         "",
                     };
-
                 }
+
                 userTableModel.addRow(rowData);
+
+                systemLogArea.append("Added new user: " + username + " (ID: " + person_id +
+                    ") at " + java.time.LocalDateTime.now() + "\n");
 
                 JOptionPane.showMessageDialog(this, "User added successfully.");
                 dispose();
 
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this,
-                        "Invalid input. Please check the fields.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
-                        ex.printStackTrace();
+                    "Invalid input. Please check the fields.\nError: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
             }
         }
     }
 
-private class EditUserDialog extends JDialog {
+
+    private class EditUserDialog extends JDialog {
         private JTextField usernameField, fNameField, lNameField, dobField, emailField;
+        private JPasswordField currentPasswordField, newPasswordField, confirmPasswordField;
         private DefaultTableModel model;
         private int rowIndex;
         private Object personID;
         private String role;
 
         public EditUserDialog(JFrame parent, DefaultTableModel model, int rowIndex,
-                                Object personID, Object username, Object fName, Object lName, Object dob, Object role, Object email) {
+                              Object personID, Object username, Object fName, Object lName, Object dob, Object role, Object email) {
             super(parent, "Edit User", true);
             this.model = model;
             this.rowIndex = rowIndex;
             this.personID = personID;
             this.role = (String) role;
 
-            setSize(400, 450);
+            setSize(400, 550);  // Increased height for password fields
             setLocationRelativeTo(parent);
             setLayout(new BorderLayout());
 
-            JPanel formPanel = new JPanel(new GridLayout(9, 2, 10, 10));
+            JPanel formPanel = new JPanel(new GridLayout(12, 2, 10, 10));  // Increased rows
             formPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 
             formPanel.add(new JLabel("Username:"));
@@ -917,7 +958,18 @@ private class EditUserDialog extends JDialog {
             formPanel.add(new JLabel("Date of Birth (YYYY-MM-DD):"));
             dobField = new JTextField(dob.toString());
             formPanel.add(dobField);
-            
+
+
+
+            formPanel.add(new JLabel("New Password:"));
+            newPasswordField = new JPasswordField();
+            formPanel.add(newPasswordField);
+
+            formPanel.add(new JLabel("Confirm Password:"));
+            confirmPasswordField = new JPasswordField();
+            formPanel.add(confirmPasswordField);
+
+
             if(role.equals("Customer")){
                 formPanel.add(new JLabel("Email:"));
                 emailField = new JTextField(email.toString());
@@ -926,9 +978,17 @@ private class EditUserDialog extends JDialog {
 
             add(formPanel, BorderLayout.CENTER);
 
+            JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+            JButton cancelButton = new JButton("Cancel");
+            cancelButton.addActionListener(e -> dispose());
+
             JButton updateButton = new JButton("Update User");
             updateButton.addActionListener(e -> updateUser());
-            add(updateButton, BorderLayout.SOUTH);
+
+            buttonPanel.add(cancelButton);
+            buttonPanel.add(updateButton);
+
+            add(buttonPanel, BorderLayout.SOUTH);
         }
 
         private void updateUser() {
@@ -938,7 +998,41 @@ private class EditUserDialog extends JDialog {
                 String lName = lNameField.getText();
                 String dob = dobField.getText();
                 String email = "";
+                String newPassword = new String(newPasswordField.getPassword());
+                String confirmPassword = new String(confirmPasswordField.getPassword());
                 CustomDate dateOfBirth = CustomDate.StringToDate(dob);
+
+                // Validate basic fields
+                if (username.isEmpty() || fName.isEmpty() || lName.isEmpty() || dob.isEmpty()) {
+                    JOptionPane.showMessageDialog(this,
+                        "Please fill in all required fields.",
+                        "Validation Error",
+                        JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Validate password if provided
+                if (!newPassword.isEmpty()) {
+                    if (!newPassword.equals(confirmPassword)) {
+                        JOptionPane.showMessageDialog(this,
+                            "New password and confirmation do not match.",
+                            "Password Error",
+                            JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    if (newPassword.length() < 6) {
+                        int result = JOptionPane.showConfirmDialog(this,
+                            "Password is shorter than 6 characters. Continue anyway?",
+                            "Weak Password",
+                            JOptionPane.YES_NO_OPTION);
+                        if (result != JOptionPane.YES_OPTION) {
+                            return;
+                        }
+                    }
+                }
+
+                // Update person details
                 if(this.role.equals("Customer")){
                     email = emailField.getText();
                     Customer c = new Customer((int)personID, username, fName, lName, dateOfBirth, email);
@@ -953,20 +1047,33 @@ private class EditUserDialog extends JDialog {
                     Admin a = new Admin((int)personID, username, fName, lName, dateOfBirth);
                     db.updatePerson(a);
                 }
+
+                // Update password if provided
+                if (!newPassword.isEmpty()) {
+                    db.updatePasswordDirectly((int)personID, newPassword);
+                    systemLogArea.append("Password updated for user ID " + personID +
+                        " (" + username + ") at " + java.time.LocalDateTime.now() + "\n");
+                }
+
                 // Update table
                 model.setValueAt(username, rowIndex, 1);
                 model.setValueAt(fName, rowIndex, 2);
                 model.setValueAt(lName, rowIndex, 3);
                 model.setValueAt(dob, rowIndex, 4);
-                model.setValueAt(email, rowIndex, 6);
+                if(this.role.equals("Customer")) {
+                    model.setValueAt(email, rowIndex, 6);
+                }
+
+                systemLogArea.append("Updated user details for ID " + personID +
+                    " (" + username + ") at " + java.time.LocalDateTime.now() + "\n");
 
                 JOptionPane.showMessageDialog(this, "User updated successfully.");
                 dispose();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this,
-                        "Invalid input. Please check the fields.",
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE);
+                    "Invalid input. Please check the fields.\nError: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
                 ex.printStackTrace();
             }
         }
