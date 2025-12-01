@@ -1712,9 +1712,10 @@ public class AdminGUI extends JFrame {
         }
     }
 
-    // Airplane Dialog Classes
+    // In the AddAirplaneDialog class:
     private class AddAirplaneDialog extends JDialog {
-        private JTextField airlineField, nameField, flightNumberField;
+        private JComboBox<String> airlineComboBox; // Change from JTextField to JComboBox
+        private JTextField modelField, flightNumberField;
         private DefaultTableModel model;
 
         public AddAirplaneDialog(JFrame parent, DefaultTableModel model) {
@@ -1728,12 +1729,31 @@ public class AdminGUI extends JFrame {
             formPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 
             formPanel.add(new JLabel("Airline:"));
-            airlineField = new JTextField();
-            formPanel.add(airlineField);
 
-            formPanel.add(new JLabel("Name:"));
-            nameField = new JTextField();
-            formPanel.add(nameField);
+            // Create and populate the dropdown
+            ArrayList<Airline> airlines = new ArrayList<>();
+            try {
+                airlines = db.getAllAirlines();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this,
+                        "Error loading airlines: " + ex.getMessage(),
+                        "Database Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+
+            // Extract airline names for the dropdown
+            String[] airlineNames = new String[airlines.size()];
+            for (int i = 0; i < airlines.size(); i++) {
+                airlineNames[i] = airlines.get(i).getName();
+            }
+
+            airlineComboBox = new JComboBox<>(airlineNames);
+            formPanel.add(airlineComboBox);
+
+            formPanel.add(new JLabel("Model Name:"));
+            modelField = new JTextField();
+            formPanel.add(modelField);
 
             formPanel.add(new JLabel("Flight Number:"));
             flightNumberField = new JTextField();
@@ -1748,63 +1768,62 @@ public class AdminGUI extends JFrame {
 
         private void saveAirplane() {
             try {
-                String airline = airlineField.getText().trim();
-                String name = nameField.getText().trim();
-                String flightNumberStr = flightNumberField.getText().trim();
+                String airlineName = (String) airlineComboBox.getSelectedItem();
+                String modelName = modelField.getText();
+                int flightNumber = Integer.parseInt(flightNumberField.getText());
 
-                // Validation
-                if (airline.isEmpty() || name.isEmpty() || flightNumberStr.isEmpty()) {
+                // Validate that an airline is selected
+                if (airlineName == null || airlineName.trim().isEmpty()) {
                     JOptionPane.showMessageDialog(this,
-                        "Please fill in all fields.",
-                        "Validation Error",
-                        JOptionPane.ERROR_MESSAGE);
+                            "Please select an airline.",
+                            "Validation Error",
+                            JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
-                int flightNumber = Integer.parseInt(flightNumberStr);
-
-                // Insert into database
-                int airplaneId = db.insertAirplane(airline, name, flightNumber);
-
-                // Add to table
+                int airplaneId = db.insertAirplane(airlineName, modelName, flightNumber);
                 Object[] rowData = {
-                    airplaneId,
-                    airline,
-                    name,
-                    flightNumber
+                        airplaneId,
+                        airlineName,
+                        modelName,
+                        flightNumber
                 };
-                model.addRow(rowData);
+                airplaneTableModel.addRow(rowData);
 
                 JOptionPane.showMessageDialog(this, "Airplane added successfully.");
                 dispose();
 
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this,
-                    "Invalid flight number. Please enter a valid number.",
-                    "Validation Error",
-                    JOptionPane.ERROR_MESSAGE);
+                        "Invalid flight number. Please enter a valid number.",
+                        "Validation Error",
+                        JOptionPane.ERROR_MESSAGE);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this,
-                    "Error adding airplane: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
+                        "Error saving airplane: " + ex.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 ex.printStackTrace();
             }
         }
     }
 
+    // In the EditAirplaneDialog class:
     private class EditAirplaneDialog extends JDialog {
-        private JTextField airlineField, nameField, flightNumberField;
+        private JComboBox<String> airlineComboBox; // Change from JTextField to JComboBox
+        private JTextField modelField, flightNumberField;
         private DefaultTableModel model;
         private int rowIndex;
         private Object airplaneID;
+        private String originalAirlineName;
 
         public EditAirplaneDialog(JFrame parent, DefaultTableModel model, int rowIndex,
-                                 Object airplaneID, Object airline, Object name, Object flightNumber) {
+                                  Object airplaneID, Object airlineName, Object modelName, Object flightNumber) {
             super(parent, "Edit Airplane", true);
             this.model = model;
             this.rowIndex = rowIndex;
             this.airplaneID = airplaneID;
+            this.originalAirlineName = airlineName.toString();
 
             setSize(400, 300);
             setLocationRelativeTo(parent);
@@ -1814,12 +1833,40 @@ public class AdminGUI extends JFrame {
             formPanel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
 
             formPanel.add(new JLabel("Airline:"));
-            airlineField = new JTextField(airline.toString());
-            formPanel.add(airlineField);
 
-            formPanel.add(new JLabel("Name:"));
-            nameField = new JTextField(name.toString());
-            formPanel.add(nameField);
+            // Create and populate the dropdown
+            ArrayList<Airline> airlines = new ArrayList<>();
+            try {
+                airlines = db.getAllAirlines();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this,
+                        "Error loading airlines: " + ex.getMessage(),
+                        "Database Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+
+            // Extract airline names for the dropdown
+            String[] airlineNames = new String[airlines.size()];
+            for (int i = 0; i < airlines.size(); i++) {
+                airlineNames[i] = airlines.get(i).getName();
+            }
+
+            airlineComboBox = new JComboBox<>(airlineNames);
+
+            // Set the selected item to the current airline
+            for (int i = 0; i < airlineNames.length; i++) {
+                if (airlineNames[i].equals(originalAirlineName)) {
+                    airlineComboBox.setSelectedIndex(i);
+                    break;
+                }
+            }
+
+            formPanel.add(airlineComboBox);
+
+            formPanel.add(new JLabel("Model Name:"));
+            modelField = new JTextField(modelName.toString());
+            formPanel.add(modelField);
 
             formPanel.add(new JLabel("Flight Number:"));
             flightNumberField = new JTextField(flightNumber.toString());
@@ -1834,46 +1881,44 @@ public class AdminGUI extends JFrame {
 
         private void updateAirplane() {
             try {
-                String airline = airlineField.getText().trim();
-                String name = nameField.getText().trim();
-                String flightNumberStr = flightNumberField.getText().trim();
+                String airlineName = (String) airlineComboBox.getSelectedItem();
+                String modelName = modelField.getText();
+                int flightNumber = Integer.parseInt(flightNumberField.getText());
 
-                // Validation
-                if (airline.isEmpty() || name.isEmpty() || flightNumberStr.isEmpty()) {
+                // Validate that an airline is selected
+                if (airlineName == null || airlineName.trim().isEmpty()) {
                     JOptionPane.showMessageDialog(this,
-                        "Please fill in all fields.",
-                        "Validation Error",
-                        JOptionPane.ERROR_MESSAGE);
+                            "Please select an airline.",
+                            "Validation Error",
+                            JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
-                int flightNumber = Integer.parseInt(flightNumberStr);
-
-                // Update in database
-                db.updateAirplane((int)airplaneID, airline, name, flightNumber);
+                // Update database
+                db.updateAirplane((int)airplaneID, airlineName, modelName, flightNumber);
 
                 // Update table
-                model.setValueAt(airline, rowIndex, 1);
-                model.setValueAt(name, rowIndex, 2);
+                model.setValueAt(airlineName, rowIndex, 1);
+                model.setValueAt(modelName, rowIndex, 2);
                 model.setValueAt(flightNumber, rowIndex, 3);
 
                 JOptionPane.showMessageDialog(this, "Airplane updated successfully.");
                 dispose();
-
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(this,
-                    "Invalid flight number. Please enter a valid number.",
-                    "Validation Error",
-                    JOptionPane.ERROR_MESSAGE);
+                        "Invalid flight number. Please enter a valid number.",
+                        "Validation Error",
+                        JOptionPane.ERROR_MESSAGE);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this,
-                    "Error updating airplane: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
+                        "Error updating airplane: " + ex.getMessage(),
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
                 ex.printStackTrace();
             }
         }
     }
+
 
     // Promotion Dialog Classes
     private class AddPromotionDialog extends JDialog {
