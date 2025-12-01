@@ -486,7 +486,7 @@ public class DatabaseManager {
 
                 Promotion promotion = new Promotion(
                     rs.getString("promo_code"),
-                    rs.getInt("discount_rate"),
+                    rs.getDouble("discount_rate"),
                     rs.getString("description"),
                     promoStartDate
                 );

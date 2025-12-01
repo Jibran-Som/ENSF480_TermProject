@@ -293,6 +293,7 @@ GRANT SELECT ON FLIGHTRESERVE.airplane TO db_customer@localhost;
 GRANT SELECT ON FLIGHTRESERVE.route TO db_customer@localhost;
 GRANT SELECT ON FLIGHTRESERVE.address TO db_customer@localhost;
 GRANT SELECT ON FLIGHTRESERVE.airline TO db_customer@localhost;
+GRANT SELECT ON FLIGHTRESERVE.promotion TO db_customer@localhost;
 GRANT SELECT, UPDATE ON FLIGHTRESERVE.person TO db_customer@localhost;
 GRANT SELECT, UPDATE ON FLIGHTRESERVE.customer TO db_customer@localhost;
 

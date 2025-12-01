@@ -8,7 +8,7 @@ public class Promotion {
     private CustomDate startDate;
 
     public Promotion(String promoCode, double discountRate, String description, 
-                    CustomDate startDate, CustomDate endDate) {
+                    CustomDate startDate) {
         this.promoCode = promoCode;
         this.discountRate = discountRate;
         this.description = description;
