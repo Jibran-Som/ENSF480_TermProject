@@ -15,7 +15,7 @@ import java.util.ArrayList;
 public class FlightAgentGUI extends JFrame {
     private String currentUser;
     private JTabbedPane tabbedPane;
-    
+
     // Controllers
     private FlightController flightController;
     private CustomerController customerController;
@@ -60,14 +60,13 @@ public class FlightAgentGUI extends JFrame {
         this.flightController = new FlightController();
         this.customerController = new CustomerController();
         this.bookingController = new BookingController();
-        
-        // Connect to database (you might want to handle this differently)
+
         try {
             db.connect("agent_user", "agent_password");
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, 
+            JOptionPane.showMessageDialog(this,
                 "Database connection failed: " + e.getMessage(),
-                "Connection Error", 
+                "Connection Error",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -120,14 +119,14 @@ public class FlightAgentGUI extends JFrame {
         searchPanel.add(new JLabel("Search:"));
         flightSearchField = new JTextField(20);
         searchPanel.add(flightSearchField);
-        
+
         flightSearchType = new JComboBox<>(new String[]{"All", "By Origin", "By Destination", "By Date"});
         searchPanel.add(flightSearchType);
-        
+
         searchFlightButton = new JButton("Search");
         searchFlightButton.addActionListener(new SearchFlightListener());
         searchPanel.add(searchFlightButton);
-        
+
         refreshFlightsButton = new JButton("Refresh");
         refreshFlightsButton.addActionListener(e -> refreshFlightsTable());
         searchPanel.add(refreshFlightsButton);
@@ -164,7 +163,7 @@ public class FlightAgentGUI extends JFrame {
         searchCustomerButton = new JButton("Search");
         searchCustomerButton.addActionListener(new SearchCustomerListener());
         searchPanel.add(searchCustomerButton);
-        
+
         refreshCustomersButton = new JButton("Refresh");
         refreshCustomersButton.addActionListener(e -> refreshCustomersTable());
         searchPanel.add(refreshCustomersButton);
@@ -252,7 +251,7 @@ public class FlightAgentGUI extends JFrame {
         try {
             flightTableModel.setRowCount(0); // Clear existing data
             ArrayList<Flight> flights = flightController.getAllFlights();
-            
+
             for (Flight flight : flights) {
                 Object[] row = {
                     flight.getFlightID(),
@@ -267,9 +266,9 @@ public class FlightAgentGUI extends JFrame {
                 flightTableModel.addRow(row);
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, 
+            JOptionPane.showMessageDialog(this,
                 "Error loading flights: " + e.getMessage(),
-                "Error", 
+                "Error",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -278,7 +277,7 @@ public class FlightAgentGUI extends JFrame {
         try {
             customerTableModel.setRowCount(0);
             ArrayList<Customer> customers = customerController.getAllCustomersAsArray();
-            
+
             for (Customer customer : customers) {
                 Object[] row = {
                     customer.getId(),
@@ -291,9 +290,9 @@ public class FlightAgentGUI extends JFrame {
                 customerTableModel.addRow(row);
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, 
+            JOptionPane.showMessageDialog(this,
                 "Error loading customers: " + e.getMessage(),
-                "Error", 
+                "Error",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -302,7 +301,7 @@ public class FlightAgentGUI extends JFrame {
         try {
             bookingTableModel.setRowCount(0);
             ArrayList<Booking> bookings = bookingController.getAllBookings();
-            
+
             for (Booking booking : bookings) {
                 Object[] row = {
                     booking.getBookingId(),
@@ -316,9 +315,9 @@ public class FlightAgentGUI extends JFrame {
                 bookingTableModel.addRow(row);
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, 
+            JOptionPane.showMessageDialog(this,
                 "Error loading bookings: " + e.getMessage(),
-                "Error", 
+                "Error",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -329,28 +328,28 @@ public class FlightAgentGUI extends JFrame {
         public void actionPerformed(ActionEvent e) {
             String searchTerm = flightSearchField.getText().trim();
             String searchType = (String) flightSearchType.getSelectedItem();
-            
+
             if (searchTerm.isEmpty()) {
                 refreshFlightsTable();
                 return;
             }
-            
+
             try {
                 flightTableModel.setRowCount(0);
                 ArrayList<Flight> allFlights = flightController.getAllFlights();
                 ArrayList<Flight> filteredFlights = new ArrayList<>();
-                
+
                 for (Flight flight : allFlights) {
                     boolean matches = false;
                     switch (searchType) {
                         case "By Origin":
-                            if (flight.getRoute() != null && 
+                            if (flight.getRoute() != null &&
                                 flight.getRoute().getDepartureLocation().getCity().toLowerCase().contains(searchTerm.toLowerCase())) {
                                 matches = true;
                             }
                             break;
                         case "By Destination":
-                            if (flight.getRoute() != null && 
+                            if (flight.getRoute() != null &&
                                 flight.getRoute().getArrivalLocation().getCity().toLowerCase().contains(searchTerm.toLowerCase())) {
                                 matches = true;
                             }
@@ -362,7 +361,7 @@ public class FlightAgentGUI extends JFrame {
                             break;
                         case "All":
                         default:
-                            if ((flight.getRoute() != null && 
+                            if ((flight.getRoute() != null &&
                                  (flight.getRoute().getDepartureLocation().getCity().toLowerCase().contains(searchTerm.toLowerCase()) ||
                                   flight.getRoute().getArrivalLocation().getCity().toLowerCase().contains(searchTerm.toLowerCase()))) ||
                                 flight.getDepartureDate().toString().contains(searchTerm) ||
@@ -371,12 +370,12 @@ public class FlightAgentGUI extends JFrame {
                             }
                             break;
                     }
-                    
+
                     if (matches) {
                         filteredFlights.add(flight);
                     }
                 }
-                
+
                 // Add filtered flights to table
                 for (Flight flight : filteredFlights) {
                     Object[] row = {
@@ -391,14 +390,14 @@ public class FlightAgentGUI extends JFrame {
                     };
                     flightTableModel.addRow(row);
                 }
-                
+
                 if (filteredFlights.isEmpty()) {
                     JOptionPane.showMessageDialog(FlightAgentGUI.this,
                         "No flights found matching your search criteria.",
                         "Search Results",
                         JOptionPane.INFORMATION_MESSAGE);
                 }
-                
+
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(FlightAgentGUI.this,
                     "Error searching flights: " + ex.getMessage(),
@@ -412,22 +411,22 @@ public class FlightAgentGUI extends JFrame {
         @Override
         public void actionPerformed(ActionEvent e) {
             String searchTerm = customerSearchField.getText().trim();
-            
+
             if (searchTerm.isEmpty()) {
                 refreshCustomersTable();
                 return;
             }
-            
+
             try {
                 customerTableModel.setRowCount(0);
                 ArrayList<Customer> allCustomers = customerController.getAllCustomersAsArray();
-                
+
                 for (Customer customer : allCustomers) {
                     if (customer.getFirstName().toLowerCase().contains(searchTerm.toLowerCase()) ||
                         customer.getLastName().toLowerCase().contains(searchTerm.toLowerCase()) ||
                         customer.getUsername().toLowerCase().contains(searchTerm.toLowerCase()) ||
                         customer.getEmail().toLowerCase().contains(searchTerm.toLowerCase())) {
-                        
+
                         Object[] row = {
                             customer.getId(),
                             customer.getUsername(),
@@ -522,10 +521,10 @@ public class FlightAgentGUI extends JFrame {
             }
 
             int customerId = (int) customerTableModel.getValueAt(selectedRow, 0);
-            
+
             try {
                 Customer customer = customerController.getCustomer(customerId);
-                
+
                 // Create edit dialog
                 JTextField usernameField = new JTextField(customer.getUsername());
                 JTextField firstNameField = new JTextField(customer.getFirstName());
@@ -551,9 +550,9 @@ public class FlightAgentGUI extends JFrame {
                     customer.setLastName(lastNameField.getText().trim());
                     customer.setEmail(emailField.getText().trim());
                     customer.setDoB(CustomDate.StringToDate(dobField.getText().trim()));
-                    
+
                     customerController.updateCustomer(customer);
-                    
+
                     JOptionPane.showMessageDialog(FlightAgentGUI.this,
                         "Customer updated successfully!",
                         "Success",
@@ -584,7 +583,7 @@ public class FlightAgentGUI extends JFrame {
             }
 
             int customerId = (int) customerTableModel.getValueAt(selectedRow, 0);
-            String customerName = customerTableModel.getValueAt(selectedRow, 2) + " " + 
+            String customerName = customerTableModel.getValueAt(selectedRow, 2) + " " +
                                 customerTableModel.getValueAt(selectedRow, 3);
 
             int confirm = JOptionPane.showConfirmDialog(FlightAgentGUI.this,
@@ -594,8 +593,9 @@ public class FlightAgentGUI extends JFrame {
 
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
-                    db.deleteCustomer(customerId);
-                    
+
+                    customerController.deleteCustomer(customerId);
+
                     JOptionPane.showMessageDialog(FlightAgentGUI.this,
                         "Customer removed successfully!",
                         "Success",
@@ -621,7 +621,7 @@ public class FlightAgentGUI extends JFrame {
                 // Get lists for selection
                 ArrayList<Customer> customers = customerController.getAllCustomersAsArray();
                 ArrayList<Flight> flights = flightController.getAllFlights();
-                
+
                 if (customers.isEmpty() || flights.isEmpty()) {
                     JOptionPane.showMessageDialog(FlightAgentGUI.this,
                         "No customers or flights available for booking.",
@@ -629,12 +629,12 @@ public class FlightAgentGUI extends JFrame {
                         JOptionPane.WARNING_MESSAGE);
                     return;
                 }
-                
+
                 // Create combo boxes for selection
                 JComboBox<Customer> customerCombo = new JComboBox<>(customers.toArray(new Customer[0]));
                 JComboBox<Flight> flightCombo = new JComboBox<>(flights.toArray(new Flight[0]));
                 JTextField seatField = new JTextField();
-                
+
                 // Custom renderers for combo boxes
                 customerCombo.setRenderer(new DefaultListCellRenderer() {
                     @Override
@@ -647,7 +647,7 @@ public class FlightAgentGUI extends JFrame {
                         return this;
                     }
                 });
-                
+
                 flightCombo.setRenderer(new DefaultListCellRenderer() {
                     @Override
                     public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
@@ -661,21 +661,21 @@ public class FlightAgentGUI extends JFrame {
                         return this;
                     }
                 });
-                
+
                 Object[] message = {
                     "Customer:", customerCombo,
                     "Flight:", flightCombo,
                     "Seat Number:", seatField
                 };
-                
+
                 int option = JOptionPane.showConfirmDialog(FlightAgentGUI.this,
                     message, "Create New Booking", JOptionPane.OK_CANCEL_OPTION);
-                
+
                 if (option == JOptionPane.OK_OPTION) {
                     Customer selectedCustomer = (Customer) customerCombo.getSelectedItem();
                     Flight selectedFlight = (Flight) flightCombo.getSelectedItem();
                     int seatNumber = Integer.parseInt(seatField.getText().trim());
-                    
+
                     // Check if seat is available
                     if (selectedFlight.getAvailableSeats() <= 0) {
                         JOptionPane.showMessageDialog(FlightAgentGUI.this,
@@ -684,18 +684,18 @@ public class FlightAgentGUI extends JFrame {
                             JOptionPane.ERROR_MESSAGE);
                         return;
                     }
-                    
+
                     Booking newBooking = bookingController.createBooking(selectedCustomer, selectedFlight, seatNumber);
-                    
+
                     JOptionPane.showMessageDialog(FlightAgentGUI.this,
                         "Booking created successfully! Booking ID: " + newBooking.getBookingId(),
                         "Success",
                         JOptionPane.INFORMATION_MESSAGE);
-                    
+
                     refreshBookingsTable();
                     refreshFlightsTable(); // Update available seats
                 }
-                
+
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(FlightAgentGUI.this,
                     "Error creating booking: " + ex.getMessage(),
@@ -720,7 +720,7 @@ public class FlightAgentGUI extends JFrame {
             try {
                 // Get the selected booking details
                 int bookingId = (int) bookingTableModel.getValueAt(selectedRow, 0);
-                
+
                 // Get the full booking object
                 Booking bookingToEdit = null;
                 ArrayList<Booking> allBookings = bookingController.getAllBookings();
@@ -741,15 +741,15 @@ public class FlightAgentGUI extends JFrame {
 
                 // Get available flights for the combo box
                 ArrayList<Flight> availableFlights = flightController.getAllFlights();
-                
+
                 // Create edit dialog with more options
                 JPanel editPanel = new JPanel(new GridLayout(4, 2, 5, 5));
-                
+
                 // Customer info (display only)
-                JTextField customerField = new JTextField(bookingToEdit.getCustomer().getFirstName() + " " + 
+                JTextField customerField = new JTextField(bookingToEdit.getCustomer().getFirstName() + " " +
                                                          bookingToEdit.getCustomer().getLastName());
                 customerField.setEditable(false);
-                
+
                 // Flight selection (editable)
                 JComboBox<Flight> flightCombo = new JComboBox<>(availableFlights.toArray(new Flight[0]));
                 flightCombo.setRenderer(new DefaultListCellRenderer() {
@@ -765,7 +765,7 @@ public class FlightAgentGUI extends JFrame {
                         return this;
                     }
                 });
-                
+
                 // Set current flight as selected
                 for (int i = 0; i < flightCombo.getItemCount(); i++) {
                     if (flightCombo.getItemAt(i).getFlightID() == bookingToEdit.getFlight().getFlightID()) {
@@ -773,10 +773,10 @@ public class FlightAgentGUI extends JFrame {
                         break;
                     }
                 }
-                
+
                 // Seat number (editable)
                 JTextField seatField = new JTextField(String.valueOf(bookingToEdit.getSeatNumber()));
-                
+
                 editPanel.add(new JLabel("Customer:"));
                 editPanel.add(customerField);
                 editPanel.add(new JLabel("Flight:"));
@@ -787,7 +787,7 @@ public class FlightAgentGUI extends JFrame {
                 editPanel.add(new JLabel("")); // Empty cell
 
                 int option = JOptionPane.showConfirmDialog(FlightAgentGUI.this,
-                    editPanel, 
+                    editPanel,
                     "Edit Booking - ID: " + bookingId,
                     JOptionPane.OK_CANCEL_OPTION,
                     JOptionPane.PLAIN_MESSAGE);
@@ -806,7 +806,7 @@ public class FlightAgentGUI extends JFrame {
                     try {
                         int newSeatNumber = Integer.parseInt(seatText);
                         Flight selectedFlight = (Flight) flightCombo.getSelectedItem();
-                        
+
                         if (newSeatNumber <= 0) {
                             JOptionPane.showMessageDialog(FlightAgentGUI.this,
                                 "Seat number must be a positive number.",
@@ -819,8 +819,8 @@ public class FlightAgentGUI extends JFrame {
                         boolean seatTaken = false;
                         ArrayList<Booking> allBookingsCheck = bookingController.getAllBookings();
                         for (Booking booking : allBookingsCheck) {
-                            if (booking.getFlight().getFlightID() == selectedFlight.getFlightID() && 
-                                booking.getBookingId() != bookingId && 
+                            if (booking.getFlight().getFlightID() == selectedFlight.getFlightID() &&
+                                booking.getBookingId() != bookingId &&
                                 booking.getSeatNumber() == newSeatNumber) {
                                 seatTaken = true;
                                 break;
@@ -890,7 +890,7 @@ public class FlightAgentGUI extends JFrame {
             }
 
             int bookingId = (int) bookingTableModel.getValueAt(selectedRow, 0);
-            String bookingInfo = "Booking ID: " + bookingId + 
+            String bookingInfo = "Booking ID: " + bookingId +
                                ", Customer: " + bookingTableModel.getValueAt(selectedRow, 1);
 
             int confirm = JOptionPane.showConfirmDialog(FlightAgentGUI.this,
@@ -901,7 +901,7 @@ public class FlightAgentGUI extends JFrame {
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
                     bookingController.cancelBooking(bookingId);
-                    
+
                     JOptionPane.showMessageDialog(FlightAgentGUI.this,
                         "Booking cancelled successfully!",
                         "Success",

@@ -35,4 +35,16 @@ public class CustomerController {
         db.updateCustomer(customer.getId(), customer.getEmail());
 
     }
+
+    public boolean deleteCustomer(int customerId) throws SQLException {
+        try {
+            int result = db.deleteCustomer(customerId);
+            return result > 0;
+        } catch (SQLException e) {
+            throw new SQLException("Error deleting customer: " + e.getMessage(), e);
+        }
+    }
+
+
+
 }
