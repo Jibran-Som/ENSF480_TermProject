@@ -1,4 +1,3 @@
-// CustomerGUI.java (updated)
 package gui;
 
 import javax.swing.*;
@@ -53,6 +52,7 @@ public class CustomerGUI extends JFrame {
 
     // Promotions Components
     private JButton viewPromotionsButton;
+    private boolean isSubscribed = false;
 
     public CustomerGUI(String username) {
         this.currentUser = username;
@@ -60,7 +60,7 @@ public class CustomerGUI extends JFrame {
         loadCustomerData();
         initializeGUI();
         loadInitialData();
-        registerForPromotions();
+        initializePromotions();
     }
 
     private void initializeControllers() {
@@ -73,6 +73,7 @@ public class CustomerGUI extends JFrame {
         // Connect to database
         try {
             db.connect("customer_user", "customer_password");
+            System.out.println("Connected to the database as customer: " + currentUser);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
                 "Database connection failed: " + e.getMessage(),
@@ -81,9 +82,9 @@ public class CustomerGUI extends JFrame {
         }
     }
 
-    private void registerForPromotions() {
+    private void initializePromotions() {
         if (currentCustomer != null) {
-            promotionManager.registerObserver(currentCustomer);
+            // Load promotions but don't auto-subscribe
             promotionManager.loadPromotionsFromDatabase();
         }
     }
@@ -104,6 +105,8 @@ public class CustomerGUI extends JFrame {
                     "Could not load customer data for: " + currentUser,
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
+            } else {
+                System.out.println("Customer data loaded: " + currentCustomer.getFirstName() + " " + currentCustomer.getLastName());
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
@@ -132,6 +135,12 @@ public class CustomerGUI extends JFrame {
         headerPanel.add(welcomeLabel, BorderLayout.WEST);
 
         JPanel headerButtonPanel = new JPanel(new FlowLayout());
+        
+        // Subscription toggle button - starts as "Subscribe to Promotions"
+        JButton subscriptionButton = new JButton("Subscribe to Promotions");
+        subscriptionButton.addActionListener(e -> toggleSubscription(subscriptionButton));
+        headerButtonPanel.add(subscriptionButton);
+
         viewPromotionsButton = new JButton("View Promotions");
         viewPromotionsButton.addActionListener(new ViewPromotionsListener());
         headerButtonPanel.add(viewPromotionsButton);
@@ -263,7 +272,7 @@ public class CustomerGUI extends JFrame {
 
         formPanel.add(new JLabel("Username:"));
         profileUsernameField = new JTextField();
-        profileUsernameField.setEditable(false); // Username shouldn't be changed
+        profileUsernameField.setEditable(false);
         formPanel.add(profileUsernameField);
 
         formPanel.add(new JLabel("First Name:"));
@@ -352,6 +361,40 @@ public class CustomerGUI extends JFrame {
         destinationField.setText("");
         dateField.setText("");
         flightTableModel.setRowCount(0);
+    }
+
+    private void toggleSubscription(JButton button) {
+        if (currentCustomer != null) {
+            if (isSubscribed) {
+                promotionManager.removeObserver(currentCustomer);
+                button.setText("Subscribe to Promotions");
+                isSubscribed = false;
+                System.out.println("Customer " + currentCustomer.getUsername() + " unsubscribed from promotions");
+                JOptionPane.showMessageDialog(this, 
+                    "You have unsubscribed from promotion notifications.", 
+                    "Unsubscribed", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                promotionManager.registerObserver(currentCustomer);
+                button.setText("Unsubscribe from Promotions");
+                isSubscribed = true;
+                System.out.println("Customer " + currentCustomer.getUsername() + " subscribed to promotions");
+                
+                // Notify about current promotions when subscribing
+                java.util.List<Promotion> activePromotions = promotionManager.getActivePromotions();
+                if (!activePromotions.isEmpty()) {
+                    System.out.println("Notifying newly subscribed customer about " + activePromotions.size() + " current promotions");
+                    for (Promotion promotion : activePromotions) {
+                        currentCustomer.update(promotion);
+                    }
+                }
+                
+                JOptionPane.showMessageDialog(this, 
+                    "You have subscribed to promotion notifications.", 
+                    "Subscribed", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
     }
 
     // Action Listeners
@@ -550,12 +593,14 @@ public class CustomerGUI extends JFrame {
                             if (appliedPromotion != null) {
                                 double discount = appliedPromotion.getDiscountRate();
                                 finalPrice = originalPrice * (1 - discount);
+                                System.out.println("Promo code " + promoCode + " applied. Discount: " + (discount * 100) + "%. Original: $" + originalPrice + ", Final: $" + finalPrice);
                                 JOptionPane.showMessageDialog(CustomerGUI.this,
                                     "Promo code applied! Discount: " + (discount * 100) + "%\n" +
                                     "New price: $" + String.format("%.2f", finalPrice),
                                     "Discount Applied",
                                     JOptionPane.INFORMATION_MESSAGE);
                             } else {
+                                System.out.println("Invalid promo code attempted: " + promoCode);
                                 JOptionPane.showMessageDialog(CustomerGUI.this,
                                     "Invalid promo code. Continuing with original price.",
                                     "Invalid Promo Code",
@@ -628,6 +673,8 @@ public class CustomerGUI extends JFrame {
                         // Create the booking
                         Booking newBooking = bookingController.createBooking(currentCustomer, selectedFlight, seatNumber);
 
+                        System.out.println("Booking created: ID " + newBooking.getBookingId() + " for customer " + currentCustomer.getUsername());
+                        
                         JOptionPane.showMessageDialog(CustomerGUI.this,
                             "Booking confirmed!\n\n" +
                             "Booking ID: " + newBooking.getBookingId() + "\n" +
@@ -690,6 +737,7 @@ public class CustomerGUI extends JFrame {
             if (confirm == JOptionPane.YES_OPTION) {
                 try {
                     bookingController.cancelBooking(bookingId);
+                    System.out.println("Booking " + bookingId + " cancelled for customer " + currentCustomer.getUsername());
 
                     JOptionPane.showMessageDialog(CustomerGUI.this,
                         "Booking cancelled successfully!",
@@ -755,6 +803,7 @@ public class CustomerGUI extends JFrame {
 
                 // Update in database
                 customerController.updateCustomer(currentCustomer);
+                System.out.println("Customer profile updated: " + currentCustomer.getUsername());
 
                 JOptionPane.showMessageDialog(CustomerGUI.this,
                     "Profile updated successfully!",
@@ -796,6 +845,11 @@ public class CustomerGUI extends JFrame {
                 }
             }
             
+            // Add subscription info
+            promotionsText.append("\n=== SUBSCRIPTION STATUS ===\n");
+            promotionsText.append("You are ").append(isSubscribed ? "SUBSCRIBED" : "NOT SUBSCRIBED");
+            promotionsText.append(" to promotion notifications.\n");
+            
             JTextArea textArea = new JTextArea(20, 50);
             textArea.setText(promotionsText.toString());
             textArea.setEditable(false);
@@ -816,8 +870,10 @@ public class CustomerGUI extends JFrame {
                 JOptionPane.YES_NO_OPTION);
 
             if (result == JOptionPane.YES_OPTION) {
-                if (currentCustomer != null) {
-                    promotionManager.removeObserver(currentCustomer);
+                if (currentCustomer != null && isSubscribed) {
+                    System.out.println("Customer " + currentCustomer.getUsername() + " logging out (was subscribed)");
+                } else if (currentCustomer != null) {
+                    System.out.println("Customer " + currentCustomer.getUsername() + " logging out (was not subscribed)");
                 }
                 db.disconnect();
                 dispose();
